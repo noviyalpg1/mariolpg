@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Petualangan Mariolpg</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: 'Fredoka One', cursive, sans-serif; }
+
+        /* --- NOTIFIKASI LANDSCAPE --- */
+        #landscape-warning {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #e52521; color: #fff; z-index: 10000;
+            display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        .rotate-icon { font-size: 80px; margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out; }
+        @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+        
+        @media screen and (orientation: portrait) { 
+            #landscape-warning { display: flex !important; } 
+            #game-wrapper { display: none !important; } 
+        }
+
+        #game-wrapper { width: 100vw; height: 100vh; position: relative;}
+        #game-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background-color: #5c94fc; overflow: hidden; }
+        canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- UI OVERLAYS --- */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(92, 148, 252, 0.95); z-index: 100; }
+        .hidden { display: none !important; }
+
+        #login-menu, #main-menu { background-image: url('https://imgur.com/9JiaKHG.png'); background-repeat: no-repeat; background-position: center center; background-size: cover; background-color: #5c94fc; }
+        .login-box { background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 400px; border: 5px solid #fbd000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+        .login-box h2 { color: #e52521; margin-top: 0; font-size: 28px; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 14px; color: #333; margin-bottom: 5px; font-family: sans-serif; font-weight: bold;}
+        .input-field { width: 100%; padding: 12px; border: 3px solid #ccc; border-radius: 10px; font-size: 16px; font-family: sans-serif; box-sizing: border-box; outline: none; }
+        .input-field:focus { border-color: #4caf50; }
+        #login-error { color: #e52521; font-family: sans-serif; font-size: 14px; margin-bottom: 15px; display: none; font-weight: bold;}
+
+        /* Penyesuaian gambar agar tidak menutupi layar saat landscape di HP */
+        #title-img { max-width: 80%; max-height: 35vh; object-fit: contain; margin-top: 2vh; margin-bottom: 0px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); animation: float 3s ease-in-out infinite; position: relative; z-index: 1; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+        .small-title { font-size: 28px; color: #FFFF00; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 15px rgba(255, 255, 255, 1); margin-top: 5px; margin-bottom: 15px; letter-spacing: 2px; text-align: center; position: relative; z-index: 2; }
+        .menu-buttons { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 2; }
+        .btn { background: #e52521; color: white; border: 4px solid #fff; padding: 12px 30px; font-size: 18px; font-family: 'Fredoka One', cursive; border-radius: 30px; cursor: pointer; box-shadow: 0 5px 0 #8a0000; transition: transform 0.1s; width: 100%; box-sizing: border-box; text-align: center; text-transform: uppercase; }
+        .btn:active { transform: translateY(5px); box-shadow: 0 0 0 #8a0000; }
+        .btn-blue { background: #2196F3; box-shadow: 0 5px 0 #0b7dda; }
+
+        /* HUD */
+        #hud { position: fixed; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 1050; }
+        .stats { background: rgba(0, 0, 0, 0.6); color: white; padding: 10px 20px; border-radius: 15px; font-size: 20px; border: 2px solid #fff; pointer-events: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;}
+        .top-buttons { display: flex; gap: 10px; pointer-events: auto; flex-wrap: wrap; justify-content: flex-end;}
+        .hud-btn { background: #fbd000; color: #d13a00; border: 3px solid #fff; padding: 10px; font-size: 16px; font-family: inherit; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 0 #c28700; white-space: nowrap;}
+        .hud-btn.active-bgm { background: #4caf50; color: white; border-color: white; box-shadow: 0 4px 0 #2e7d32; }
+
+        /* TOUCH CONTROLS */
+        #touch-controls { position: fixed; bottom: 30px; left: 0; width: 100%; height: 120px; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; pointer-events: none; z-index: 1050; }
+        .touch-group { display: flex; gap: 15px; align-items: flex-end; pointer-events: auto; }
+        .t-btn { width: 70px; height: 70px; background: rgba(255, 255, 255, 0.4); border: 4px solid rgba(255, 255, 255, 0.8); border-radius: 50%; color: #333; font-size: 14px; font-weight: bold; display: flex; justify-content: center; align-items: center; user-select: none; cursor: pointer; }
+        .t-btn:active, .t-btn.active { background: rgba(255, 255, 255, 0.9); transform: scale(0.95); }
+        .t-btn-jump { width: 85px; height: 85px; background: rgba(229, 37, 33, 0.6); color: white; border-color: rgba(255,255,255,0.9); }
+
+        /* MODALS */
+        #quiz-modal, #library-modal { background: rgba(0, 0, 0, 0.85); z-index: 1200; }
+        .quiz-box, .library-box { background: #fff; padding: 25px; border-radius: 20px; text-align: center; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; border: 5px solid #fbd000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: sans-serif; }
+        .library-box { border-color: #4caf50; }
+        .quiz-box h2, .library-box h2 { color: #e52521; margin-top: 0; font-size: 24px; font-family: 'Fredoka One', cursive;}
+        
+        /* Quiz Kustom UI */
+        .q-btn { background: #4caf50; color: white; border: none; padding: 12px; font-size: 16px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; transition: transform 0.1s, background 0.2s;}
+        .q-btn:active { transform: scale(0.95); }
+        .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        
+        .word-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 15px; padding: 15px; background: #f0f0f0; border-radius: 10px;}
+        .word-chip { background: #2196F3; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; user-select: none; box-shadow: 0 3px 0 #0b7dda; display: inline-block; transition: transform 0.1s; font-size: 15px;}
+        .word-chip:active { transform: translateY(3px); box-shadow: 0 0 0; }
+        .word-chip.used { opacity: 0.3; pointer-events: none; }
+        
+        .answer-area { min-height: 60px; border: 3px dashed #ccc; border-radius: 10px; padding: 15px; margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; background: #fafafa;}
+        .answer-slot { display: inline-block; min-width: 60px; height: 35px; border-bottom: 3px solid #333; margin: 0 5px; text-align: center; color: #e52521; font-weight: bold; cursor: pointer; line-height: 35px; padding: 0 10px;}
+        .answer-slot.filled { border-bottom: 3px solid #4caf50; color: #4caf50; }
+
+        /* --- PAPAN SKOR & PODIUM --- */
+        .box-ui { background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 20px; border: 5px solid #fbd000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 90%; max-width: 550px; font-family: sans-serif; max-height: 90vh; overflow-y: auto;}
+        .box-ui h2 { color: #e52521; margin-top: 0; font-family: 'Fredoka One', cursive; font-size: 28px; text-transform: uppercase; text-shadow: 1px 1px 0px #fff;}
+        
+        #leaderboard-modal { background: url('https://imgur.com/giQNSsR.png') center center / cover no-repeat; }
+        .leaderboard-box { background: rgba(0, 0, 0, 0.8); border-color: #fbd000; }
+        .leaderboard-box h2 { color: #fff; text-shadow: 2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000; }
+        .leaderboard-box #lb-loading { color: #fff; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+
+        .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 8px; margin: 40px 0 20px 0; height: 160px; }
+        .podium { position: relative; color: white; border-radius: 15px 15px 0 0; width: 30%; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding-top: 25px; font-weight: bold; font-family: 'Fredoka One', cursive; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 -5px 15px rgba(0,0,0,0.2), inset 0 -5px 0 rgba(0,0,0,0.2); transition: transform 0.3s ease;}
+        .podium:hover { transform: translateY(-5px); }
+        .podium .pod-rank { position: absolute; top: -20px; background: white; color: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid #fff; text-shadow: none; }
+        .podium.p1 .pod-rank { width: 55px; height: 55px; top: -27px; font-size: 24px; border-color: #FFD700; }
+        .podium .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 95%; font-size: 15px; margin-top: 8px; }
+        .podium .school { font-size: 10px; font-family: sans-serif; font-weight: normal; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 10px; margin: 3px 0; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: none; }
+        .podium .score { font-size: 20px; margin-top: auto; padding-bottom: 8px; color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,0.4); }
+        
+        .p1 { height: 140px; background: linear-gradient(to bottom, #FFD700, #DAA520); border: 2px solid #B8860B; z-index: 3;} 
+        .p2 { height: 110px; background: linear-gradient(to bottom, #E0E0E0, #A9A9A9); border: 2px solid #808080; z-index: 2;} 
+        .p3 { height: 85px; background: linear-gradient(to bottom, #CD7F32, #8B4513); border: 2px solid #5C2E0B; z-index: 1;} 
+        
+        .lb-list { background: rgba(0,0,0,0.05); border-radius: 15px; padding: 10px; text-align: left; margin-bottom: 15px; max-height: 180px; overflow-y: auto; border: 2px solid rgba(0,0,0,0.1); }
+        
+        .leaderboard-box .lb-list { background: rgba(0,0,0,0.75); border-color: rgba(255,255,255,0.4); }
+        .leaderboard-box .lb-item { border-bottom-color: rgba(255,255,255,0.2); }
+        .leaderboard-box .lb-name { color: #fff; }
+        .leaderboard-box .lb-school { color: #ddd; }
+        .leaderboard-box .lb-pts { text-shadow: 1px 1px 1px #000; }
+        .leaderboard-box .lb-rank { color: #fbd000; text-shadow: 1px 1px 1px #000; }
+
+        .lb-item { display: flex; justify-content: space-between; padding: 10px 8px; border-bottom: 1px solid rgba(0,0,0,0.1); align-items: center; }
+        .lb-rank { font-weight: bold; color: #e52521; width: 35px; font-size: 18px; font-family: 'Fredoka One', cursive;}
+        .lb-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; color: #333; font-weight: bold; line-height: 1.2;}
+        .lb-school { font-size: 11px; color: #777; display: block; font-weight: normal;}
+        .lb-pts { font-weight: bold; color: #4caf50; font-size: 18px; font-family: 'Fredoka One', cursive;}
+        #lb-loading { text-align: center; font-style: italic; color: #666; padding: 20px 0;}
+
+        /* Efek UI Victory & Game Over Baru */
+        .victory-box { border-color: #4CAF50; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: linear-gradient(to bottom, #fff, #e8f5e9); }
+        .victory-img { max-width: 100%; height: 180px; object-fit: contain; margin-bottom: -10px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); animation: float 3s ease-in-out infinite; }
+        .victory-title { font-size: 36px !important; color: #4CAF50 !important; text-shadow: 2px 2px 0px #fff, 4px 4px 0px rgba(0,0,0,0.1); margin-bottom: 10px;}
+        .score-display { background: #fbd000; border: 4px solid #fff; border-radius: 15px; padding: 15px; box-shadow: 0 5px 0 #c28700; color: #d13a00; }
+        .score-display span { font-weight: bold; font-size: 16px; display: block; }
+        .score-display h3 { margin: 0; font-size: 40px; font-family: 'Fredoka One', cursive; text-shadow: 2px 2px 0px #fff; }
+
+        .message-box { border-color: #e52521; background: linear-gradient(to bottom, #fff, #ffebee); animation: shake 0.5s ease-in-out; }
+        .message-title { font-family: 'Fredoka One', cursive; font-size: 32px; color: #e52521; text-shadow: 2px 2px 0px #fff, 4px 4px 0px rgba(0,0,0,0.1); margin-top: 10px;}
+
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } }
+
+        @media screen and (max-height: 450px) {
+            #touch-controls { bottom: 5px; padding: 0 15px; height: 90px; }
+            .t-btn { width: 55px; height: 55px; font-size: 11px; border-width: 2px; }
+            .t-btn-jump { width: 65px; height: 65px; font-size: 12px; }
+            .login-box { padding: 15px; }
+            .login-box h2 { font-size: 20px; }
+            .input-field { padding: 8px; font-size: 14px; }
+            .btn { font-size: 14px; padding: 8px 20px; }
+            .small-title { font-size: 20px; margin-bottom: 5px; }
+            .menu-buttons { gap: 8px; }
+            .box-ui { padding: 15px; max-height: 95vh; }
+            .podium-container { margin: 30px 0 10px 0; height: 110px; }
+            .p1 { height: 100px; font-size: 13px;}
+            .p2 { height: 80px; font-size: 12px;}
+            .p3 { height: 60px; font-size: 11px;}
+            .podium { padding-top: 18px; }
+            .podium .pod-rank { width: 30px; height: 30px; top: -15px; font-size: 14px;}
+            .podium.p1 .pod-rank { width: 40px; height: 40px; top: -20px; font-size: 18px;}
+            .podium .name { margin-top: 4px; }
+        }
+
+        @media screen and (orientation: portrait) {
+            #touch-controls { bottom: 10px; padding: 0 10px; }
+            .t-btn { width: 60px; height: 60px; font-size: 12px; }
+            .t-btn-jump { width: 75px; height: 75px; font-size: 14px; }
+            .login-box { padding: 20px; }
+            .btn { font-size: 16px; padding: 12px 20px; }
+            .stats { font-size: 16px; }
+        }
+
+        /* --- Tampilan untuk Layar Besar (Papan Interaktif Digital / PID / PC) --- */
+        @media screen and (min-width: 1024px) {
+            #touch-controls {
+                justify-content: center;
+                gap: 50px;
+                bottom: 40px;
+            }
+            .t-btn { width: 80px; height: 80px; font-size: 16px; }
+            .t-btn-jump { width: 95px; height: 95px; font-size: 18px; }
+        }
+
+        #message-overlay { position: fixed; background: rgba(0,0,0,0.8); color: white; z-index: 1300;}
+    </style>
+</head>
+<body>
+
+<div id="landscape-warning">
+    <div class="rotate-icon">📱↻</div>
+    <h1>Putar HP Kamu!</h1>
+    <p>Game ini wajib dimainkan dalam mode mendatar (Landscape) agar seru!</p>
+</div>
+
+<div id="game-wrapper">
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- UI Menus -->
+    <div id="login-menu" class="overlay">
+        <button id="fs-btn-login" class="hud-btn" style="position: absolute; top: 15px; right: 15px; z-index: 10;">⛶ Fullscreen</button>
+        <div class="login-box">
+            <h2>Masuk Dulu Yuk!</h2>
+            <div id="login-error">Nama dan Sekolah harus diisi!</div>
+            <div class="input-group"><label>Nama Kamu:</label><input type="text" id="player-name" class="input-field" autocomplete="off" placeholder="Contoh: Noviya"></div>
+            <div class="input-group"><label>Asal Sekolah:</label><input type="text" id="player-school" class="input-field" autocomplete="off" placeholder="Contoh: SMPN 42 BDL"></div>
+            <button class="btn btn-blue" id="login-submit-btn">Mulai Petualangan</button>
+        </div>
+    </div>
+
+    <div id="main-menu" class="overlay hidden">
+        <button id="fs-btn-main" class="hud-btn" style="position: absolute; top: 15px; right: 15px; z-index: 10;">⛶ Fullscreen</button>
+        <img id="title-img" src="https://imgur.com/VmSLsxs.png" alt="Petualangan Mariolpg">
+        <h1 class="small-title">Halo, <span id="welcome-name">Sobat</span>!</h1>
+        <div class="menu-buttons">
+            <button class="btn" id="start-btn">MAIN SEKARANG</button>
+            <button class="btn btn-blue" id="leaderboard-btn">🏆 PAPAN SKOR</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="overlay hidden">
+        <div class="box-ui leaderboard-box">
+            <h2>🏆 Papan Skor Peringkat</h2>
+            <div id="lb-loading">Memuat data dari server...</div>
+            <div class="podium-container hidden" id="podium-container">
+                <div class="podium p2">
+                    <div class="pod-rank">2</div>
+                    <div class="name" id="pod-2-name">-</div>
+                    <div class="school" id="pod-2-school">-</div>
+                    <div class="score" id="pod-2-score">-</div>
+                </div>
+                <div class="podium p1">
+                    <div class="pod-rank">👑 1</div>
+                    <div class="name" id="pod-1-name">-</div>
+                    <div class="school" id="pod-1-school">-</div>
+                    <div class="score" id="pod-1-score">-</div>
+                </div>
+                <div class="podium p3">
+                    <div class="pod-rank">3</div>
+                    <div class="name" id="pod-3-name">-</div>
+                    <div class="school" id="pod-3-school">-</div>
+                    <div class="score" id="pod-3-score">-</div>
+                </div>
+            </div>
+            <div class="lb-list hidden" id="lb-list"></div>
+            <button class="btn" id="btn-close-lb" style="margin-top: 15px;">Tutup</button>
+        </div>
+    </div>
+
+    <div id="hud" class="hidden">
+        <div class="stats" style="position:relative;">
+            ❤️ <span id="ui-lives">3</span> <span style="color:#aaa;">|</span> 
+            💰 <span id="ui-score">0</span> <span style="color:#aaa;">|</span> 
+            🚩 Lv <span id="ui-level">1</span>
+        </div>
+        <div class="top-buttons">
+            <button id="zoom-out-btn" class="hud-btn" title="Perkecil Layar">🔍-</button>
+            <button id="zoom-in-btn" class="hud-btn" title="Perbesar Layar">🔍+</button>
+            <button id="fullscreen-hud-btn" class="hud-btn">⛶</button>
+            <button id="bgm-btn" class="hud-btn active-bgm">🎵</button>
+            <button id="menu-btn" class="hud-btn" style="background: #e52521; color: white; border-color: white;">Menu</button>
+        </div>
+    </div>
+
+    <div id="touch-controls" class="hidden">
+        <div class="touch-group">
+            <div class="t-btn" id="t-left">Kiri</div><div class="t-btn" id="t-right">Kanan</div>
+        </div>
+        <div class="touch-group">
+            <div class="t-btn" id="t-down" style="height: 60px;">Bawah</div><div class="t-btn t-btn-jump" id="t-jump">Lompat</div>
+        </div>
+    </div>
+
+    <!-- Modal Kuis Terintegrasi -->
+    <div id="quiz-modal" class="overlay hidden">
+        <div class="quiz-box">
+            <h2 id="quiz-title">Kuis Wawasan!</h2>
+            <p id="quiz-question" style="font-size: 18px; color:#333; margin-bottom: 10px; font-weight:bold; white-space: pre-wrap;"></p>
+            <div id="quiz-interactive-area"></div>
+            
+            <!-- AI Tutor Section -->
+            <button class="q-btn" id="btn-ai-tutor" style="background: #9c27b0; margin-top: 15px; box-shadow: 0 4px 0 #6a1b9a;">🤖 Tanya AI Tutor (Sisa: <span id="ai-count">3</span>)</button>
+            <div id="ai-tutor-message" class="hidden" style="margin-top:15px; padding:15px; background:#f3e5f5; border-left:5px solid #9c27b0; border-radius:8px; text-align:left; font-size:14px; color:#4a148c; font-family:sans-serif; line-height: 1.5;"></div>
+            
+            <button class="btn btn-blue hidden" id="btn-submit-quiz" style="margin-top: 15px;">Cek Jawaban</button>
+        </div>
+    </div>
+
+    <!-- Modal Perpustakaan -->
+    <div id="library-modal" class="overlay hidden">
+        <div class="library-box">
+            <h2>📚 Ruang Baca</h2>
+            <div id="lib-content-area" style="background:#f9f9f9; max-height: 45vh; overflow-y: auto; padding:15px; border-radius:10px; text-align:left; min-height:150px; font-size: 16px; line-height: 1.5; color: #333;"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                <button id="lib-prev" class="btn btn-blue" style="padding:10px 15px; width:auto; font-size: 14px;">&laquo; Prev</button>
+                <span id="lib-page-indicator" style="font-weight:bold; color: #333;">1 / 4</span>
+                <button id="lib-next" class="btn btn-blue" style="padding:10px 15px; width:auto; font-size: 14px;">Next &raquo;</button>
+            </div>
+            <button class="btn" id="lib-close" style="margin-top:20px;">Selesai Belajar</button>
+        </div>
+    </div>
+
+    <!-- Modal Victory -->
+    <div id="victory-modal" class="overlay hidden" style="z-index: 1300;">
+        <div class="box-ui victory-box">
+            <img src="https://imgur.com/x1XOhm6.png" alt="Victory" class="victory-img">
+            <h2 class="victory-title">LEVEL SELESAI!</h2>
+            <div class="score-display">
+                <span>SKOR KAMU</span>
+                <h3 id="victory-score">0</h3>
+            </div>
+            <button class="btn btn-blue" id="btn-next-level" style="margin-top: 20px; font-size: 22px; padding: 15px 40px;">Lanjut Level Berikutnya</button>
+        </div>
+    </div>
+
+    <!-- Modal Game Over & Universal Message -->
+    <div id="message-overlay" class="overlay hidden" style="z-index: 1300;">
+        <div id="msg-box" class="box-ui message-box">
+            <img id="msg-image" src="https://imgur.com/UcopyEK.png" alt="Message Icon" class="victory-img">
+            <h1 id="message-text" class="message-title">Game Over</h1>
+            <button class="btn" id="msg-btn" style="margin-top: 20px; font-size: 20px; padding: 15px 30px;">Lanjut</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/** ==============================
+ * KONFIGURASI DAN VARIABEL GLOBAL
+ * ============================== */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzxrADgurGXXFZyC8jwkN_g9afI7UQsOsNxCyqX8spWW5h3wBvJ_48XzyXF26oW4D6r/exec";
+
+let gameState = 'login'; 
+let requestID;
+let currentPlayer = { name: '', school: '' };
+
+const TILE_SIZE = 40;
+const GRAVITY = 0.6;
+const FRICTION = 0.8;
+let camera = { x: 0, y: 0 };
+let zoomLevel = 1.0;
+const keys = { right: false, left: false, jump: false, down: false, run: false };
+
+let score = 0;
+let lives = 3;
+let currentLevel = 1;
+
+let mapTiles = []; let mapWidth = 0; let mapHeight = 0;
+let blocks = []; let items = []; let enemies = []; let particles = []; let floatingTexts = [];
+let coins = [];
+
+let inSecretArea = false;
+let returnPosX = 0;
+let returnPosY = 0;
+let frameCount = 0;
+
+let totalQuestions = 0, answeredQuestions = 0, warningTimer = 0;
+let aiTutorUses = 3; // Initial AI Tutor uses
+let specialPoints = {};
+let clouds = [], birds = [], bgMountains = [], bgTrees = [];
+let currentAvailableQuestions = [];
+
+function resizeCanvas() { 
+    canvas.width = window.innerWidth; 
+    canvas.height = window.innerHeight; 
+}
+window.addEventListener('resize', resizeCanvas); 
+resizeCanvas(); 
+
+function updateCamera() {
+    let vWidth = canvas.width / zoomLevel;
+    let vHeight = canvas.height / zoomLevel;
+
+    camera.x = Math.max(0, player.x - vWidth / 2 + player.width/2);
+    let maxCamX = mapWidth * TILE_SIZE - vWidth;
+    if(camera.x > maxCamX) camera.x = Math.max(0, maxCamX);
+
+    let playerScreenY = player.y - camera.y;
+    if (playerScreenY < vHeight * 0.3) {
+        camera.y -= (vHeight * 0.3 - playerScreenY) * 0.15;
+    } else if (playerScreenY > vHeight * 0.7) {
+        camera.y += (playerScreenY - vHeight * 0.7) * 0.15;
+    }
+    if (camera.y < 0) camera.y = 0;
+    let maxCamY = mapHeight * TILE_SIZE - vHeight;
+    if (maxCamY > 0 && camera.y > maxCamY) camera.y = maxCamY;
+}
+
+/** ASSETS */
+const assets = { player: new Image(), flag: new Image(), enemy: new Image() };
+assets.player.src = "https://imgur.com/z6sD9iS.png";
+assets.flag.src = "https://imgur.com/I2DODhL.png";
+assets.enemy.src = "https://imgur.com/sjcux6J.png";
+
+/** AUDIO SYSTEM */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+
+function playSound(type) {
+    if (!audioCtx || !bgmEnabled) return;
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), now = audioCtx.currentTime;
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    
+    if (type === 'jump') { osc.type = 'square'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); } 
+    else if (type === 'coin') { osc.type = 'square'; osc.frequency.setValueAtTime(987, now); osc.frequency.setValueAtTime(1318, now + 0.08); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3); } 
+    else if (type === 'bump') { osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1); } 
+    else if (type === 'powerup') { osc.type = 'square'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(1000, now + 0.4); gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0, now + 0.4); osc.start(now); osc.stop(now + 0.4); } 
+    else if (type === 'dead') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(100, now + 0.8); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 1.0); osc.start(now); osc.stop(now + 1.0); }
+    else if (type === 'pipe') { osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now + 0.6); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.6); osc.start(now); osc.stop(now + 0.6); }
+    else if (type === 'win') { osc.type = 'square'; osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now+0.2); osc.frequency.setValueAtTime(783, now+0.4); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 1.0); osc.start(now); osc.stop(now + 1.0); }
+}
+
+let bgmEnabled = true, isBgmPlaying = false, nextNoteTime = 0, bgmReqId;
+const marioMelody = [ 659,0,659,0,0,659,0,523,659,0,784,0,0,0,392,0,0,0,523,0,0,392,0,0,329,0,0,440,0,493,0,466,440,0,392,659,784,880,0,698,784,0,659,0,523,587,493,0,0,0 ];
+let bgmStep = 0;
+
+function scheduleBGM() {
+    if (!isBgmPlaying || !audioCtx || !bgmEnabled) return;
+    while (nextNoteTime < audioCtx.currentTime + 0.1) {
+        let freq = marioMelody[bgmStep];
+        if (freq > 0) {
+            let osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'square'; osc.frequency.value = freq; osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.015, nextNoteTime); gain.gain.setTargetAtTime(0, nextNoteTime + 0.05, 0.015); osc.start(nextNoteTime); osc.stop(nextNoteTime + 0.15);
+        }
+        nextNoteTime += 0.15; bgmStep = (bgmStep + 1) % marioMelody.length;
+    }
+    bgmReqId = requestAnimationFrame(scheduleBGM);
+}
+function startBGM() { if(bgmEnabled && !isBgmPlaying) { initAudio(); isBgmPlaying = true; nextNoteTime = audioCtx.currentTime + 0.1; bgmStep = 0; scheduleBGM(); } }
+function stopBGM() { isBgmPlaying = false; cancelAnimationFrame(bgmReqId); }
+
+document.getElementById('bgm-btn').addEventListener('click', function() {
+    bgmEnabled = !bgmEnabled;
+    if(bgmEnabled) { this.classList.add('active-bgm'); this.innerText = '🎵'; this.style.background = '#4caf50'; this.style.color = '#fff'; startBGM(); } 
+    else { this.classList.remove('active-bgm'); this.innerText = '🔇'; this.style.background = '#e52521'; this.style.color = '#fff'; stopBGM(); }
+});
+
+// Fitur Tombol Menu di HUD
+document.getElementById('menu-btn').addEventListener('click', function() {
+    if(confirm("Apakah kamu yakin ingin kembali ke Menu Utama? Progress level saat ini akan hilang.")) {
+        showMainMenu();
+    }
+});
+
+/** MAPS & LOGIKA PIPA
+ * Setiap map di set agar hanya memiliki TEPAT 5 balok kuis (Q).
+ */
+const maps = [
+    [ // LEVEL 1: Mudah
+        "                                                                 ",
+        "                                                                 ",
+        "                                                                 ",
+        "                                                                 ",
+        "                                                                 ",
+        "                                                                 ",
+        "                                            Q                    ",
+        "                        B?M                                      ",
+        "      M      Q                                                 S ",
+        "                  B?Q?BBZBB                BBBBB                 ",
+        "         E              BB                                QN     ",
+        "      B?B   L           BB  X    E      P                        ",
+        " R R      R l           R   X      R    p   E               R    ",
+        "GGGGGGGGGGGGGG  GGGGGGGGGGGGGGGGG GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG ",
+        "                                                                 ",
+        "                                                                 ",
+        "                          U                                      ",
+        "                          u                                      ",
+        "                        NBBBB  BBBBBB                            ",
+        "                        B  Q        B                            ",
+        "                        B     M     BB                           ",
+        "                        B  E     E  OB                           ",
+        "                        GGGGGGGGGGGGGGG                          ",
+        "                                                                 "
+    ],
+    [ // LEVEL 2: Sedang
+        "                                                                                                   ",
+        "                                                                                                   ",
+        "                                                                                                   ",
+        "                                                                                                S  ",
+        "                                                                                         Q         ",
+        "                M                                  Q                                               ",
+        "                       B?B                                                                         ",
+        "      Q                               ?N       E                   M                GGGGGGGGGGGGGG ",
+        "         E      BB   B???ZBBBB     Q           BBBBB?BB                    E         B             ",
+        "     BBBBB     BBB                          BBB                 Q       BB?BBNZ      B             ",
+        "              BBBBB             P       X   B?B                                      B             ",
+        " R      R     BBBBBB   E        p     E X    R          E                  RR        B             ",
+        "GGGGGGGGGGGG  GGGGGGGGGGGGGG  GGGGGGGGGGGGGGGGGGGGGGGGGGGG   GGGGGGGGGGGGGGGGGGGGGGGGG             ",
+        "                                                                                                   ",
+        "                                                 M                                                 ",
+        "                          U                                                                        ",
+        "                          u                        BBBB                                            ",
+        "                        BBBB    BBBB                                                               ",
+        "                                   B           ?BB                                                 ",
+        "                             ?     B                                                               ",
+        "                             E     E                   O                                           ",
+        "                        GGGGGGGGGGGGGGGGG   GGGGGGGGGGGG                                           ",
+        "                                                                                                   "
+    ],
+    [ // LEVEL 3: Sulit
+        "                                                                                                                          ",
+        "                                                                                                              Q           ",
+        "                                          M               Q                                                               ",
+        "                      Q                                                                                                   ",
+        "                                                                                M                            BBB          ",
+        "                                   BBBBBBBBBBB          BBBBB          Z                                       B          ",
+        "                   BBBBB?BB                             B   B                                                     B       ",
+        "         E                                              B   B    E     E     BBBBBBBB               BB?BB       B         ",
+        "      NBBB                    E                         BBBBB   BBBB  BBBB                         B          B        S  ",
+        "                       N     BBBBBBB                             Q                                B         B             ",
+        "   Q           BBB                        P                              X                 B?B   B        B               ",
+        "               BBB       E                p                E             X       E              B       B                 ",
+        "GGGGGGGGGG   GGGGGGGGGGGGGGGGGGGGGG   GGGGGGGGGGGG    GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG  GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG ",
+        "                                                                                                                          ",
+        "                                                                                                                          ",
+        "                                     U                                                                                    ",
+        "                                     u                   M                                                                ",
+        "                                   BBBBBBB                          BBBBBB                                                ",
+        "                                              BBBBB                                                                       ",
+        "                                       ?    N      B     BBBBB     ?   ?????                                              ",
+        "                                   B              B                                                                       ",
+        "                                   B   E     E   B   E        E             O                                             ",
+        "                                   GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG                                             ",
+        "                                                                                                                          "
+    ]
+];
+
+/** PLAYER LOGIC */
+const player = {
+    x: 50, y: 100, originalHeight: 40, crouchHeight: 24, width: 30, height: 40,
+    vx: 0, vy: 0, speed: 5, jumpPower: 11, grounded: false, facingLeft: false, runFrame: 0, invincibleTimer: 0, finishedLevel: false, isJumping: false, jumpHoldTimer: 0, isCrouching: false, isBig: false, isFlying: false, pipeState: null, pipeTimer: 0, pipeTargetType: null, dead: false,
+    reset: function() { this.x = 50; this.y = 100; this.vx = 0; this.vy = 0; this.isBig = false; this.isFlying = false; this.originalHeight = 40; this.crouchHeight = 24; this.height = this.originalHeight; this.width = 30; this.isCrouching = false; this.invincibleTimer = 0; this.finishedLevel = false; this.isJumping = false; this.jumpHoldTimer = 0; this.pipeState = null; this.dead = false; camera.x = 0; camera.y = 0; },
+    makeBig: function() { if (!this.isBig) { this.isBig = true; this.y -= 15; this.originalHeight = 55; this.height = this.originalHeight; this.width = 35; this.crouchHeight = 30; spawnParticles(this.x + this.width/2, this.y + this.height/2, '#fff'); spawnFloatingText("MANTAP!", this.x, this.y-20, '#4caf50'); } },
+    makeFly: function() { 
+        this.isFlying = true;
+        this.makeBig(); // Jadi besar juga saat dapat sayap
+        spawnFloatingText("BISA TERBANG!", this.x, this.y-20, '#2196F3');
+    },
+    shrink: function() { 
+        if (this.isFlying) {
+            this.isFlying = false;
+            this.invincibleTimer = 2; playSound('pipe'); spawnParticles(this.x + this.width/2, this.y + this.height/2, '#ddd');
+        } else if (this.isBig) { 
+            this.isBig = false; this.originalHeight = 40; this.height = this.originalHeight; this.width = 30; this.crouchHeight = 24; this.y += 15; this.invincibleTimer = 2; playSound('pipe'); spawnParticles(this.x + this.width/2, this.y + this.height/2, '#ddd'); 
+        } 
+    },
+    die: function() { 
+        if(this.dead) return; 
+        this.dead = true; stopBGM(); playSound('dead'); 
+        this.vy = -12; this.vx = 0; lives--; updateHUD(); 
+        setTimeout(() => { 
+            if(lives > 0) { 
+                this.reset(); 
+                startBGM(); 
+            } else { 
+                showGameOver(); 
+            } 
+        }, 2000); 
+    },
+    update: function() {
+        if(this.dead) { this.vy += GRAVITY; this.y += this.vy; return; }
+        if(this.finishedLevel || this.pipeState) return;
+
+        // Pipe interactions
+        if (keys.down && this.grounded && !this.isCrouching && Math.abs(this.vx) < 1) {
+            let centerCol = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            let bottomRow = Math.floor((this.y + this.height + 2) / TILE_SIZE);
+            if (bottomRow < mapTiles.length && mapTiles[bottomRow]) {
+                let tile = mapTiles[bottomRow][centerCol];
+                if (tile && (tile.type === 10 || tile.type === 15)) {
+                    this.x = centerCol * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    if (tile.type === 15) { this.pipeState = 'entering_library'; } 
+                    else { this.pipeState = 'entering'; this.pipeTargetType = 'U'; }
+                    this.pipeTimer = 0; gameState = 'pipe_transition'; playSound('pipe'); return; 
+                }
+            }
+        }
+        
+        // Side Pipe Interactions
+        if(keys.right && this.grounded) {
+            let rightCol = Math.floor((this.x + this.width + 2) / TILE_SIZE), midRow = Math.floor((this.y + this.height/2) / TILE_SIZE);
+            if(mapTiles[midRow] && mapTiles[midRow][rightCol] && mapTiles[midRow][rightCol].type === 12) { 
+                 this.pipeState = 'entering_side'; this.pipeTargetType = 'X'; this.pipeTimer = 0; gameState = 'pipe_transition'; playSound('pipe'); return;
+            }
+        }
+
+        // Crouching logic
+        let wantsToCrouch = keys.down && this.grounded;
+        if (wantsToCrouch && !this.isCrouching) { this.isCrouching = true; this.height = this.crouchHeight; this.y += (this.originalHeight - this.crouchHeight); } 
+        else if (!keys.down && this.isCrouching) {
+            let canStand = true; let leftCol = Math.floor((this.x + 4) / TILE_SIZE), rightCol = Math.floor((this.x + this.width - 5) / TILE_SIZE);
+            let topRow = Math.floor((this.y - (this.originalHeight - this.crouchHeight)) / TILE_SIZE);
+            if (topRow >= 0 && topRow < mapTiles.length) { for (let c = leftCol; c <= rightCol; c++) { if (c < mapWidth && isSolid(mapTiles[topRow][c]?.type)) canStand = false; } }
+            if (canStand) { this.isCrouching = false; this.height = this.originalHeight; this.y -= (this.originalHeight - this.crouchHeight); }
+        }
+
+        // Movement X
+        let currentMaxSpeed = this.isCrouching ? this.speed * 0.4 : this.speed;
+        if (keys.right) { this.vx += 0.4; this.facingLeft = false; } else if (keys.left) { this.vx -= 0.4; this.facingLeft = true; }
+        if (this.vx > currentMaxSpeed) this.vx -= 0.2; if (this.vx < -currentMaxSpeed) this.vx += 0.2;
+        if (this.vx > this.speed) this.vx = this.speed; if (this.vx < -this.speed) this.vx = -this.speed;
+        if (!keys.left && !keys.right) { this.vx *= FRICTION; if (Math.abs(this.vx) < 0.1) this.vx = 0; }
+
+        // Jump & Fly (Bisa multi-jump jika terbang)
+        if (keys.jump && !this.isJumping) {
+            if (this.grounded || this.isFlying) {
+                let speedRatio = Math.abs(this.vx) / this.speed, momentumBonus = Math.pow(speedRatio, 2) * 2; 
+                this.vy = -(this.jumpPower + (this.grounded ? momentumBonus : 0)); 
+                this.grounded = false; 
+                this.isJumping = true; 
+                this.jumpHoldTimer = 10; 
+                playSound('jump');
+            }
+        }
+        if (keys.jump && this.isJumping && this.jumpHoldTimer > 0) { this.vy -= 0.3; this.jumpHoldTimer--; }
+        if (!keys.jump) { this.isJumping = false; this.jumpHoldTimer = 0; }
+
+        // Apply Physics
+        this.vy += GRAVITY; 
+        // Kurangi kecepatan jatuh jika punya sayap
+        if(this.isFlying && this.vy > 2) this.vy = 2; 
+
+        this.x += this.vx; 
+        checkCollisions(true); 
+        this.y += this.vy; 
+        this.grounded = false; 
+        checkCollisions(false); 
+
+        // Animation & Invincibility
+        if (this.grounded) { if (!this.isCrouching && Math.abs(this.vx) > 0.5) this.runFrame += Math.abs(this.vx) * 0.1; else this.runFrame = 0; }
+        if (this.invincibleTimer > 0) {
+            this.invincibleTimer -= 1/60;
+            if(this.invincibleTimer < 0) this.invincibleTimer = 0;
+        }
+
+        // Out of bounds death
+        if (this.y > mapTiles.length * TILE_SIZE + 100) {
+            this.die();
+        }
+
+        updateCamera();
+    }
+};
+
+/** COLLISIONS & BLOCKS */
+function isSolid(type) { return [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16].includes(type); }
+
+function checkCollisions(isX) {
+    let leftCol = Math.floor((player.x + 4) / TILE_SIZE);
+    let rightCol = Math.floor((player.x + player.width - 5) / TILE_SIZE);
+    let topRow = Math.floor((player.y) / TILE_SIZE);
+    let bottomRow = Math.floor((player.y + player.height - 1) / TILE_SIZE);
+
+    if (topRow < 0) topRow = 0;
+    if (bottomRow >= mapHeight) bottomRow = mapHeight - 1;
+
+    for (let r = topRow; r <= bottomRow; r++) {
+        for (let c = leftCol; c <= rightCol; c++) {
+            if (mapTiles[r] && mapTiles[r][c]) {
+                let tile = mapTiles[r][c];
+                
+                // Flag collision (Win / Progress)
+                if (specialPoints.flag && c === Math.floor(specialPoints.flag.x/TILE_SIZE) && r >= Math.floor(specialPoints.flag.y/TILE_SIZE) && r <= Math.floor(specialPoints.flag.y/TILE_SIZE)+9) {
+                    if (answeredQuestions < totalQuestions) {
+                        if (warningTimer <= 0) {
+                            spawnFloatingText("Jawab Semua Kuis Dulu!", player.x, player.y - 30, '#e52521');
+                            warningTimer = 60; 
+                        }
+                    } else {
+                        if (!player.grounded && !specialPoints.flag.sliding) {
+                            startFlagSlide();
+                        } else if (player.grounded && !specialPoints.flag.sliding) {
+                            if (warningTimer <= 0) {
+                                spawnFloatingText("Lompat ambil bendera!", player.x, player.y - 30, '#fbd000');
+                                warningTimer = 60;
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                if (isSolid(tile.type)) {
+                    if (isX) {
+                        if (player.vx > 0) { player.x = c * TILE_SIZE - player.width; player.vx = 0; } 
+                        else if (player.vx < 0) { player.x = (c + 1) * TILE_SIZE; player.vx = 0; }
+                    } else {
+                        if (player.vy > 0) { player.y = r * TILE_SIZE - player.height; player.vy = 0; player.grounded = true; } 
+                        else if (player.vy < 0) { player.y = (r + 1) * TILE_SIZE; player.vy = 0; player.jumpHoldTimer = 0; hitBlock(r, c); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function hitBlock(r, c) {
+    let tile = mapTiles[r][c];
+    if (tile.type === 2) { 
+        if (player.isBig || player.isFlying) { mapTiles[r][c] = { type: 0, bumpY: 0 }; playSound('bump'); spawnParticles(c * TILE_SIZE + 20, r * TILE_SIZE + 20, '#a0522d'); } 
+        else { tile.bumpY = -10; playSound('bump'); }
+    } else if (tile.type === 3) { 
+        tile.type = 6; tile.bumpY = -10; score += 10; updateHUD(); playSound('coin'); items.push(new Coin(c * TILE_SIZE + 10, r * TILE_SIZE));
+    } else if (tile.type === 4) { 
+        playSound('bump'); 
+        triggerQuiz(r, c);
+    } else if (tile.type === 5) { 
+        tile.type = 6; tile.bumpY = -10; playSound('powerup'); items.push(new Mushroom(c * TILE_SIZE, r * TILE_SIZE - TILE_SIZE, 'big'));
+    } else if (tile.type === 7) { 
+        tile.type = 6; tile.bumpY = -10; playSound('powerup'); items.push(new Mushroom(c * TILE_SIZE, r * TILE_SIZE - TILE_SIZE, '1up'));
+    } else if (tile.type === 8) { 
+        tile.type = 6; tile.bumpY = -10; playSound('powerup'); items.push(new Mushroom(c * TILE_SIZE, r * TILE_SIZE - TILE_SIZE, 'fly'));
+    }
+}
+
+/** ENTITIES */
+class Mushroom {
+    constructor(x, y, type = 'big') { 
+        this.x = x; this.y = y; this.w = 30; this.h = 30; this.vx = 2; this.vy = 0; this.active = true; 
+        this.type = type;
+    }
+    update() {
+        if(!this.active) return;
+        this.vy += GRAVITY; this.x += this.vx;
+        
+        let cLeft = Math.floor(this.x/TILE_SIZE);
+        let cRight = Math.floor((this.x+this.w)/TILE_SIZE);
+        let r = Math.floor((this.y+this.h-2)/TILE_SIZE);
+        
+        if(this.vx < 0 && isSolid(mapTiles[r]?.[cLeft]?.type)) { this.vx *= -1; this.x = (cLeft+1)*TILE_SIZE; }
+        else if(this.vx > 0 && isSolid(mapTiles[r]?.[cRight]?.type)) { this.vx *= -1; this.x = cRight*TILE_SIZE - this.w; }
+        
+        this.y += this.vy;
+        let rowBottom = Math.floor((this.y+this.h)/TILE_SIZE);
+        if(this.vy > 0 && isSolid(mapTiles[rowBottom]?.[Math.floor((this.x+this.w/2)/TILE_SIZE)]?.type)) { 
+            this.vy = 0; this.y = rowBottom*TILE_SIZE - this.h; 
+        }
+        
+        if (player.x < this.x + this.w && player.x + player.width > this.x && player.y < this.y + this.h && player.y + player.height > this.y) {
+            playSound('powerup'); 
+            if (this.type === 'big') {
+                player.makeBig(); 
+                score += 50; 
+            } else if (this.type === '1up') {
+                lives++; 
+                score += 100;
+                spawnFloatingText("1-UP", player.x, player.y - 20, '#4caf50');
+            } else if (this.type === 'fly') {
+                player.makeFly();
+                score += 100;
+            }
+            updateHUD(); 
+            this.active = false;
+        }
+    }
+    draw(ctx) { 
+        if(!this.active) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = '#fceee6'; ctx.fillRect(7, 15, 16, 15);
+        ctx.fillStyle = '#000'; ctx.fillRect(11, 18, 2, 5); ctx.fillRect(17, 18, 2, 5);
+        
+        ctx.fillStyle = this.type === '1up' ? '#4caf50' : (this.type === 'fly' ? '#2196F3' : '#e52521');
+        ctx.beginPath(); ctx.arc(15, 15, 15, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(7, 7, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(23, 7, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(15, 3, 4, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+}
+
+class Coin {
+    constructor(x, y) { this.x = x; this.y = y; this.startY = y; this.vy = -8; this.active = true; }
+    update() { if(!this.active) return; this.vy += GRAVITY; this.y += this.vy; if (this.y > this.startY) { this.active = false; spawnFloatingText("+10", this.x, this.startY, '#fbd000'); } }
+    draw(ctx) { if(this.active) { ctx.fillStyle = '#fbd000'; ctx.beginPath(); ctx.arc(this.x+10, this.y+10, 10, 0, Math.PI*2); ctx.fill(); } }
+}
+
+class Enemy {
+    constructor(x, y) { this.x = x; this.y = y; this.w = 32; this.h = 32; this.vx = -1.5; this.vy = 0; this.dead = false; this.deadTimer = 0; }
+    update() {
+        if(this.dead) { this.deadTimer++; return; }
+        this.vy += GRAVITY; this.x += this.vx;
+        
+        let cLeft = Math.floor(this.x/TILE_SIZE), cRight = Math.floor((this.x+this.w)/TILE_SIZE);
+        let r = Math.floor((this.y+this.h-2)/TILE_SIZE);
+        if(this.vx < 0 && isSolid(mapTiles[r]?.[cLeft]?.type)) { this.vx *= -1; this.x = (cLeft+1)*TILE_SIZE; }
+        else if(this.vx > 0 && isSolid(mapTiles[r]?.[cRight]?.type)) { this.vx *= -1; this.x = cRight*TILE_SIZE - this.w; }
+        
+        this.y += this.vy;
+        let rowBottom = Math.floor((this.y+this.h)/TILE_SIZE);
+        if(this.vy > 0 && isSolid(mapTiles[rowBottom]?.[Math.floor((this.x+this.w/2)/TILE_SIZE)]?.type)) { this.vy=0; this.y = rowBottom*TILE_SIZE - this.h; }
+        
+        if (!player.dead && !player.pipeState && player.x < this.x + this.w && player.x + player.width > this.x && player.y < this.y + this.h && player.y + player.height > this.y) {
+            if (player.vy > 0 && player.y + player.height < this.y + this.h/2) {
+                this.dead = true; playSound('bump'); player.vy = -8; score += 20; updateHUD(); spawnFloatingText("20", this.x, this.y, '#fff');
+            } else {
+                if (player.invincibleTimer <= 0) {
+                    if (player.isBig || player.isFlying) { player.shrink(); } else { player.die(); }
+                }
+            }
+        }
+    }
+    draw(ctx) { 
+        if(this.deadTimer > 30) return;
+        ctx.save(); ctx.translate(this.x, this.y);
+        if(this.dead) { ctx.scale(1, 0.3); ctx.translate(0, this.h*2.2); }
+        
+        if (assets.enemy.complete && assets.enemy.naturalHeight !== 0) {
+            ctx.drawImage(assets.enemy, 0, 0, this.w, this.h);
+        } else {
+            ctx.fillStyle = '#8B4513'; ctx.beginPath(); ctx.arc(16, 16, 16, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(10, 10, 4, 0, Math.PI*2); ctx.arc(22, 10, 4, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(10, 10, 2, 0, Math.PI*2); ctx.arc(22, 10, 2, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+function spawnParticles(x, y, color) {
+    for(let i=0; i<5; i++) { particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-1)*10, life: 30, color: color }); }
+}
+function spawnFloatingText(text, x, y, color='#fff') {
+    floatingTexts.push({ text: text, x: x, y: y, life: 40, color: color });
+}
+
+/** SYSTEM UPDATE & DRAW */
+function updateGame() {
+    frameCount++;
+    if (warningTimer > 0) warningTimer--;
+    
+    player.update();
+    items.forEach(i => i.update());
+    enemies.forEach(e => e.update());
+    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+    floatingTexts.forEach(ft => { ft.y -= 1; ft.life--; });
+    
+    // Gerakkan awan dan burung
+    clouds.forEach(c => { c.x += c.speed; if(c.x > mapWidth*TILE_SIZE) c.x = -200; });
+    birds.forEach(b => { 
+        b.x += b.speed; b.y += Math.sin(frameCount * 0.1) * 0.5; 
+        if(b.x > mapWidth*TILE_SIZE) { b.x = -50; b.y = Math.random() * 300; }
+    });
+
+    items = items.filter(i => i.active);
+    enemies = enemies.filter(e => e.deadTimer <= 30);
+    particles = particles.filter(p => p.life > 0);
+    floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+
+    for(let r=0; r<mapHeight; r++) {
+        for(let c=0; c<mapWidth; c++) {
+            if(mapTiles[r][c].bumpY < 0) mapTiles[r][c].bumpY += 1;
+        }
+    }
+}
+
+function drawDecorations() {
+    let vWidth = canvas.width / zoomLevel;
+    // Gunung Rumput Bulat (Parallax efek)
+    ctx.save();
+    let paraX = camera.x * 0.5; // Bergerak lebih lambat
+    bgMountains.forEach(m => {
+        let drawX = m.x + paraX;
+        if (drawX > camera.x - m.r - 10 && drawX < camera.x + vWidth + m.r + 10) {
+            // Garis luar (outline) hitam tebal
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); ctx.arc(drawX, 13 * TILE_SIZE, m.r + 4, Math.PI, 0); ctx.fill();
+            
+            // Warna dasar gunung hijau gelap
+            ctx.fillStyle = '#228B22';
+            ctx.beginPath(); ctx.arc(drawX, 13 * TILE_SIZE, m.r, Math.PI, 0); ctx.fill();
+            
+            // Warna bagian dalam hijau terang
+            ctx.fillStyle = '#32CD32';
+            ctx.beginPath(); ctx.arc(drawX, 13 * TILE_SIZE, m.r * 0.75, Math.PI, 0); ctx.fill();
+            
+            // Garis pantulan cahaya (highlight estetik) di sisi kiri atas
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.beginPath(); 
+            ctx.arc(drawX, 13 * TILE_SIZE, m.r * 0.85, Math.PI * 1.15, Math.PI * 1.35); 
+            ctx.stroke();
+        }
+    });
+    ctx.restore();
+
+    // Awan
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    clouds.forEach(c => {
+        if(c.x > camera.x - 200 && c.x < camera.x + vWidth + 200) {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 30 * c.scale, Math.PI * 0.5, Math.PI * 1.5);
+            ctx.arc(c.x + 30 * c.scale, c.y - 20 * c.scale, 40 * c.scale, Math.PI * 1, Math.PI * 2);
+            ctx.arc(c.x + 60 * c.scale, c.y, 30 * c.scale, Math.PI * 1.5, Math.PI * 0.5);
+            ctx.fill();
+        }
+    });
+
+    // Burung
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    birds.forEach(b => {
+        if(b.x > camera.x - 50 && b.x < camera.x + vWidth + 50) {
+            let wingY = Math.sin(frameCount * 0.3) * 10;
+            ctx.beginPath();
+            ctx.moveTo(b.x, b.y); ctx.quadraticCurveTo(b.x + 10, b.y + wingY, b.x + 20, b.y);
+            ctx.moveTo(b.x + 20, b.y); ctx.quadraticCurveTo(b.x + 30, b.y + wingY, b.x + 40, b.y);
+            ctx.stroke();
+        }
+    });
+
+    // Pohon
+    bgTrees.forEach(t => {
+        if(t.x > camera.x - 100 && t.x < camera.x + vWidth + 100) {
+            // Batang
+            ctx.fillStyle = '#795548';
+            ctx.fillRect(t.x + 15, t.y - 60, 10, 60);
+            // Daun
+            ctx.fillStyle = '#2E7D32';
+            ctx.beginPath(); ctx.arc(t.x + 20, t.y - 60, 25, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(t.x + 5, t.y - 45, 20, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(t.x + 35, t.y - 45, 20, 0, Math.PI*2); ctx.fill();
+        }
+    });
+}
+
+function drawGame() {
+    ctx.fillStyle = player.y > 13 * TILE_SIZE ? '#000' : '#5c94fc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.scale(zoomLevel, zoomLevel);
+    ctx.translate(-camera.x, -camera.y);
+
+    if (player.y <= 13 * TILE_SIZE) drawDecorations(); // Gambar alam di-translate agar posisinya pas di dunia
+
+    for (let r = 0; r < mapHeight; r++) {
+        for (let c = 0; c < mapWidth; c++) {
+            let tile = mapTiles[r][c];
+            if (tile.type > 0) {
+                let tx = c * TILE_SIZE, ty = r * TILE_SIZE + tile.bumpY;
+                
+                if (tile.type === 1) { 
+                    ctx.fillStyle = player.y > 13*TILE_SIZE ? '#444' : '#8B4513'; ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = player.y > 13*TILE_SIZE ? '#666' : '#228B22'; ctx.fillRect(tx, ty, TILE_SIZE, 8);
+                } else if (tile.type === 2 || tile.type === 5 || tile.type === 7 || tile.type === 8) { 
+                    // Desain Batu Bata Klasik Mario (menyembunyikan jamur rahasia)
+                    ctx.fillStyle = '#cc4a14'; ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+                    
+                    ctx.strokeStyle = '#5a1b04'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(tx, ty + TILE_SIZE/2); ctx.lineTo(tx + TILE_SIZE, ty + TILE_SIZE/2); ctx.stroke(); // Tengah Horizontal
+                    ctx.beginPath(); ctx.moveTo(tx + TILE_SIZE/2, ty); ctx.lineTo(tx + TILE_SIZE/2, ty + TILE_SIZE/2); ctx.stroke(); // Vertikal Atas
+                    ctx.beginPath(); ctx.moveTo(tx + TILE_SIZE/4, ty + TILE_SIZE/2); ctx.lineTo(tx + TILE_SIZE/4, ty + TILE_SIZE); ctx.stroke(); // Vertikal Kiri Bawah
+                    ctx.beginPath(); ctx.moveTo(tx + TILE_SIZE*3/4, ty + TILE_SIZE/2); ctx.lineTo(tx + TILE_SIZE*3/4, ty + TILE_SIZE); ctx.stroke(); // Vertikal Kanan Bawah
+                    
+                    ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(tx, ty, TILE_SIZE, TILE_SIZE);
+                    
+                    // Efek Highlight agar lebih 3D
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(tx, ty, TILE_SIZE, 2);
+                } else if (tile.type === 3 || tile.type === 4) { 
+                    ctx.fillStyle = tile.type === 4 ? '#2196F3' : '#FBD000'; ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = '#000'; ctx.font = "bold 24px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
+                    ctx.fillText(tile.type === 4 ? "Q" : "?", tx + TILE_SIZE/2, ty + TILE_SIZE/2);
+                    ctx.strokeStyle = '#000'; ctx.strokeRect(tx, ty, TILE_SIZE, TILE_SIZE);
+                } else if (tile.type === 6) { 
+                    ctx.fillStyle = '#8B4513'; ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeStyle = '#000'; ctx.strokeRect(tx, ty, TILE_SIZE, TILE_SIZE);
+                } else if ([10,11,12,13,14,15,16].includes(tile.type)) { 
+                    let isPurple = (tile.type === 15 || tile.type === 16);
+                    let baseColor = isPurple ? '#9C27B0' : '#00C853';
+                    let lightColor = isPurple ? '#E1BEE7' : '#B9F6CA';
+                    let darkColor = isPurple ? '#4A148C' : '#1B5E20';
+                    
+                    let gradient = ctx.createLinearGradient(tx, ty, tx + TILE_SIZE, ty);
+                    gradient.addColorStop(0, darkColor); gradient.addColorStop(0.3, lightColor);
+                    gradient.addColorStop(0.6, baseColor); gradient.addColorStop(1, darkColor);
+
+                    let hGradient = ctx.createLinearGradient(tx, ty, tx, ty + TILE_SIZE);
+                    hGradient.addColorStop(0, darkColor); hGradient.addColorStop(0.3, lightColor);
+                    hGradient.addColorStop(0.6, baseColor); hGradient.addColorStop(1, darkColor);
+
+                    if (tile.type === 11 || tile.type === 16) { 
+                        ctx.fillStyle = gradient; ctx.fillRect(tx + 2, ty, TILE_SIZE - 4, TILE_SIZE);
+                        ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(tx + 2, ty, TILE_SIZE - 4, TILE_SIZE);
+                    } else if (tile.type === 10 || tile.type === 14 || tile.type === 15) { 
+                        ctx.fillStyle = gradient; ctx.fillRect(tx + 2, ty + 15, TILE_SIZE - 4, TILE_SIZE - 15);
+                        ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(tx + 2, ty + 15, TILE_SIZE - 4, TILE_SIZE - 15);
+                        ctx.fillStyle = gradient; ctx.fillRect(tx - 2, ty, TILE_SIZE + 4, 15);
+                        ctx.strokeRect(tx - 2, ty, TILE_SIZE + 4, 15);
+                        ctx.fillStyle = '#000'; ctx.fillRect(tx + 4, ty, TILE_SIZE - 8, 10);
+                    } else if (tile.type === 12) { 
+                        ctx.fillStyle = hGradient; ctx.fillRect(tx + 15, ty + 2, TILE_SIZE - 15, TILE_SIZE - 4);
+                        ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(tx + 15, ty + 2, TILE_SIZE - 15, TILE_SIZE - 4);
+                        ctx.fillStyle = hGradient; ctx.fillRect(tx, ty - 2, 15, TILE_SIZE + 4);
+                        ctx.strokeRect(tx, ty - 2, 15, TILE_SIZE + 4);
+                        ctx.fillStyle = '#000'; ctx.fillRect(tx, ty + 4, 10, TILE_SIZE - 8);
+                    } else if (tile.type === 13) { 
+                        ctx.fillStyle = hGradient; ctx.fillRect(tx, ty + 2, TILE_SIZE - 15, TILE_SIZE - 4);
+                        ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(tx, ty + 2, TILE_SIZE - 15, TILE_SIZE - 4);
+                        ctx.fillStyle = hGradient; ctx.fillRect(tx + TILE_SIZE - 15, ty - 2, 15, TILE_SIZE + 4);
+                        ctx.strokeRect(tx + TILE_SIZE - 15, ty - 2, 15, TILE_SIZE + 4);
+                        ctx.fillStyle = '#000'; ctx.fillRect(tx + TILE_SIZE - 10, ty + 4, 10, TILE_SIZE - 8);
+                    }
+                } else if (tile.type === 20) { 
+                    // Better Grass/Bush
+                    ctx.fillStyle = '#2E7D32'; // Dark green
+                    ctx.beginPath();
+                    ctx.arc(tx + TILE_SIZE/2, ty + TILE_SIZE, TILE_SIZE/2, Math.PI, 0); // Center bump
+                    ctx.arc(tx + TILE_SIZE*0.8, ty + TILE_SIZE, TILE_SIZE/3, Math.PI, 0); // Right bump
+                    ctx.arc(tx + TILE_SIZE*0.2, ty + TILE_SIZE, TILE_SIZE/3, Math.PI, 0); // Left bump
+                    ctx.fill();
+                    
+                    // Light green highlight
+                    ctx.fillStyle = '#4CAF50'; 
+                    ctx.beginPath();
+                    ctx.arc(tx + TILE_SIZE/2, ty + TILE_SIZE, TILE_SIZE/2.5, Math.PI, 0); 
+                    ctx.arc(tx + TILE_SIZE*0.8, ty + TILE_SIZE, TILE_SIZE/3.5, Math.PI, 0); 
+                    ctx.arc(tx + TILE_SIZE*0.2, ty + TILE_SIZE, TILE_SIZE/3.5, Math.PI, 0); 
+                    ctx.fill();
+                }
+            }
+        }
+    }
+
+    if(specialPoints.flag) {
+        ctx.fillStyle = '#fff'; ctx.fillRect(specialPoints.flag.x + 18, specialPoints.flag.y, 4, 10*TILE_SIZE);
+        ctx.fillStyle = '#fbd000'; ctx.beginPath(); ctx.arc(specialPoints.flag.x + 20, specialPoints.flag.y - 10, 12, 0, Math.PI*2); ctx.fill();
+        if(assets.flag.complete && assets.flag.naturalHeight !== 0) {
+            let flagY = specialPoints.flag.flagY || (specialPoints.flag.y + 20);
+            ctx.drawImage(assets.flag, specialPoints.flag.x - 30, flagY, 60, 60);
+        }
+    }
+
+    items.forEach(i => i.draw(ctx));
+    enemies.forEach(e => e.draw(ctx));
+    
+    if (!player.dead || player.vy < 0) {
+        ctx.save();
+        if(player.invincibleTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) ctx.globalAlpha = 0.5;
+        
+        let drawX = player.x;
+        let drawY = player.y;
+        
+        if (player.facingLeft) {
+            ctx.translate(drawX + player.width, drawY);
+            ctx.scale(-1, 1);
+            drawX = 0; drawY = 0;
+        } else {
+            ctx.translate(drawX, drawY);
+            drawX = 0; drawY = 0;
+        }
+
+        // Gambar Sayap jika terbang
+        if (player.isFlying) {
+            let wingYAnim = (!player.grounded) ? Math.sin(frameCount * 0.5) * 8 : 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(-5, 15 + wingYAnim, 15, 6, Math.PI / -6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 1; ctx.strokeStyle = '#cccccc'; ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.ellipse(-10, 10 + wingYAnim, 12, 5, Math.PI / -4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        if (assets.player.complete && assets.player.naturalHeight !== 0) {
+            let animY = (!player.grounded) ? -2 : (Math.sin(player.runFrame) * 2);
+            if(player.isCrouching) {
+                ctx.drawImage(assets.player, drawX, drawY+animY, player.width, player.height); 
+            } else {
+                ctx.drawImage(assets.player, drawX, drawY+animY, player.width, player.height);
+            }
+        } else {
+            ctx.fillStyle = '#e52521';
+            ctx.fillRect(drawX, drawY, player.width, player.height);
+        }
+        ctx.restore();
+    }
+
+    particles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life/30; ctx.fillRect(p.x, p.y, 4, 4); ctx.globalAlpha=1; });
+    floatingTexts.forEach(ft => { ctx.fillStyle = '#000'; ctx.font="bold 16px Arial"; ctx.fillText(ft.text, ft.x+2, ft.y+2); ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y); });
+
+    ctx.restore();
+}
+
+/** PIPA & FLAG TRANSITIONS */
+function updatePipe() {
+    player.pipeTimer++;
+    if(player.pipeTimer < 30) {
+        if(player.pipeState === 'entering' || player.pipeState === 'entering_library') player.y += 1.5;
+        if(player.pipeState === 'entering_side') player.x += 1.5;
+    } else if(player.pipeTimer === 30) {
+        if (player.pipeState === 'entering_library') {
+            showLibrary();
+        } else {
+            teleportToTile(player.pipeTargetType === 'U' ? 14 : 13);
+            player.pipeState = player.pipeTargetType === 'U' ? 'exiting' : 'exiting_side';
+            if(player.pipeTargetType === 'X') {
+                player.x -= TILE_SIZE;
+            }
+        }
+    } else if(player.pipeTimer < 60) {
+        if(player.pipeState === 'exiting') player.y -= 1.5;
+        if(player.pipeState === 'exiting_side') player.x += 1.5;
+    } else {
+        gameState = 'playing'; player.pipeState = null;
+    }
+    
+    let vWidth = canvas.width / zoomLevel, vHeight = canvas.height / zoomLevel;
+    camera.x = Math.max(0, player.x - vWidth / 2 + player.width/2);
+    camera.y = Math.max(0, player.y - vHeight / 2 + 50);
+    if(camera.x > mapWidth*TILE_SIZE - vWidth) camera.x = Math.max(0, mapWidth*TILE_SIZE - vWidth);
+    if(camera.y > mapHeight*TILE_SIZE - vHeight) camera.y = Math.max(0, mapHeight*TILE_SIZE - vHeight);
+}
+
+function startFlagSlide() {
+    specialPoints.flag.sliding = true;
+    gameState = 'flag_slide';
+    stopBGM();
+    playSound('win');
+    player.vx = 0;
+    player.vy = 0;
+    player.x = specialPoints.flag.x - 10;
+    score += 500;
+    updateHUD();
+    spawnFloatingText("500", player.x, player.y, '#fff');
+}
+
+function updateFlagSlide() {
+    if (player.y < specialPoints.flag.y + 8.5 * TILE_SIZE) {
+        player.y += 3;
+        player.runFrame = 0;
+    }
+    if (specialPoints.flag.flagY < specialPoints.flag.y + 8.5 * TILE_SIZE) {
+        specialPoints.flag.flagY += 3;
+    }
+    
+    if (player.y >= specialPoints.flag.y + 8.5 * TILE_SIZE && specialPoints.flag.flagY >= specialPoints.flag.y + 8.5 * TILE_SIZE) {
+        levelComplete();
+    }
+    
+    updateCamera();
+    
+    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+    floatingTexts.forEach(ft => { ft.y -= 1; ft.life--; });
+    particles = particles.filter(p => p.life > 0);
+    floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+}
+
+function teleportToTile(typeId) {
+    for(let r=0; r<mapHeight; r++) {
+        for(let c=0; c<mapWidth; c++) {
+            if(mapTiles[r][c].type === typeId) {
+                if (typeId === 13) {
+                    player.x = (c * TILE_SIZE) + TILE_SIZE; 
+                    player.y = r * TILE_SIZE;
+                } else {
+                    player.x = c * TILE_SIZE + (TILE_SIZE-player.width)/2;
+                    player.y = r * TILE_SIZE;
+                }
+                return;
+            }
+        }
+    }
+}
+
+/** MAP & ASSET LOADING */
+function generateNature() {
+    clouds = []; birds = []; bgMountains = []; bgTrees = [];
+    
+    // Gunung (Jumlah dikurangi jadi 6 dan jaraknya diatur agar merata)
+    let totalMountains = 6;
+    for(let i=0; i<totalMountains; i++) {
+        bgMountains.push({ 
+            x: (i * ((mapWidth * TILE_SIZE * 0.8) / totalMountains)) + Math.random() * 200, 
+            r: 100 + Math.random() * 120 
+        });
+    }
+
+    // Awan
+    for(let i=0; i<20; i++) clouds.push({ x: Math.random() * mapWidth * TILE_SIZE, y: 50 + Math.random() * 200, scale: 0.5 + Math.random()*1, speed: 0.2 + Math.random()*0.5 });
+    // Burung
+    for(let i=0; i<10; i++) birds.push({ x: Math.random() * mapWidth * TILE_SIZE, y: 100 + Math.random() * 200, speed: 1 + Math.random()*2 });
+    
+    // Auto-generate pohon di atas tanah yang rata
+    for(let c=5; c<mapWidth-5; c+=3) {
+        for(let r=5; r<mapHeight; r++) {
+            if(mapTiles[r][c].type === 1 && Math.random() > 0.6) { // Jika tanah
+                // Cek apakah di atasnya kosong
+                if(mapTiles[r-1] && mapTiles[r-1][c].type === 0 && mapTiles[r-2] && mapTiles[r-2][c].type === 0) {
+                    bgTrees.push({ x: c * TILE_SIZE, y: r * TILE_SIZE });
+                    break;
+                }
+            }
+        }
+    }
+}
+
+function loadLevel(lvlIndex) {
+    currentLevel = lvlIndex; mapTiles = []; enemies = []; items = []; particles = []; floatingTexts = []; specialPoints = {};
+    totalQuestions = 0; answeredQuestions = 0; warningTimer = 0;
+    
+    // Memberikan batas penggunaan AI Tutor
+    if (lvlIndex === 1) aiTutorUses = 3;
+    else aiTutorUses += 2; // Bonus +2 kesempatan di level berikutnya
+    
+    let rawMap = maps[lvlIndex - 1];
+    if(!rawMap) { 
+        submitScoreToGAS();
+        showMessage("Selamat Semua Level Selesai", "Kembali ke Menu", () => showMainMenu(), true); 
+        return; 
+    }
+
+    mapHeight = rawMap.length; mapWidth = rawMap[0].length;
+
+    for(let r=0; r<mapHeight; r++) {
+        let row = [];
+        for(let c=0; c<mapWidth; c++) {
+            let char = rawMap[r][c]; let type = 0;
+            if(char === 'G') type = 1; else if(char === 'B') type = 2; else if(char === '?') type = 3; 
+            else if(char === 'Q') { type = 4; totalQuestions++; }
+            else if(char === 'M') type = 5; 
+            else if(char === 'N') type = 7; 
+            else if(char === 'Z') type = 8; 
+            else if(char === 'P') type = 10; 
+            else if(char === 'p' || char === 'u') type = 11; 
+            else if(char === 'O') type = 12;
+            else if(char === 'X') type = 13; 
+            else if(char === 'U') type = 14; 
+            else if(char === 'L') type = 15; 
+            else if(char === 'l') type = 16; 
+            else if(char === 'R') type = 20;
+
+            if(char === 'E') enemies.push(new Enemy(c*TILE_SIZE, r*TILE_SIZE + 8));
+            if(char === 'S') { specialPoints.flag = {x: c*TILE_SIZE, y: r*TILE_SIZE, flagY: r*TILE_SIZE + 20, sliding: false}; type = 0; }
+            row.push({type: type, bumpY: 0});
+        }
+        mapTiles.push(row);
+    }
+    
+    generateNature();
+
+    // Persiapkan soal acak tanpa pengulangan untuk level ini
+    if (currentLevel === 1) currentAvailableQuestions = [...quizLevel1].sort(() => Math.random() - 0.5);
+    else if (currentLevel === 2) currentAvailableQuestions = [...quizLevel2].sort(() => Math.random() - 0.5);
+    else if (currentLevel === 3) currentAvailableQuestions = [...quizLevel3].sort(() => Math.random() - 0.5);
+
+    player.reset(); updateHUD(); gameState = 'playing'; startBGM();
+}
+
+function levelComplete() {
+    if(player.finishedLevel) return;
+    player.finishedLevel = true; 
+    gameState = 'level_complete'; 
+    document.getElementById('victory-score').innerText = score;
+    document.getElementById('victory-modal').classList.remove('hidden');
+}
+
+document.getElementById('btn-next-level').onclick = () => {
+    document.getElementById('victory-modal').classList.add('hidden');
+    loadLevel(currentLevel + 1);
+};
+
+function showGameOver() {
+    gameState = 'gameover'; stopBGM();
+    submitScoreToGAS();
+    showMessage("Game Over", "Main Lagi", () => { score = 0; lives = 3; loadLevel(1); }, false);
+}
+
+function showMessage(msg, btnText, callback, isWin = false) {
+    const msgText = document.getElementById('message-text');
+    const msgBox = document.getElementById('msg-box');
+    const msgImg = document.getElementById('msg-image');
+
+    msgText.innerText = msg;
+    msgImg.src = isWin ? "https://imgur.com/x1XOhm6.png" : "https://imgur.com/UcopyEK.png";
+    
+    if (isWin) {
+        msgBox.className = "box-ui victory-box";
+        msgText.className = "victory-title";
+        msgText.style.fontFamily = "'Fredoka One', cursive";
+    } else {
+        msgBox.className = "box-ui message-box";
+        msgText.className = "message-title";
+    }
+
+    const btn = document.getElementById('msg-btn');
+    btn.innerText = btnText;
+    btn.onclick = () => { document.getElementById('message-overlay').classList.add('hidden'); callback(); };
+    document.getElementById('message-overlay').classList.remove('hidden');
+}
+
+/** DATABASE KUIS BARU */
+const quizLevel1 = [
+    { q: "Harga tas Rp80.000 didiskon 10%.\nPotongan harga = ___", a: "Rp8.000" },
+    { q: "Sepatu Rp120.000 diskon 20%.\nHarga setelah diskon = ___", a: "Rp96.000" },
+    { q: "Buku Rp50.000 diskon 30%.\nDiskon = ___", a: "Rp15.000" },
+    { q: "Topi Rp40.000 diskon 25%.\nHarga akhir = ___", a: "Rp30.000" },
+    { q: "Jaket Rp200.000 diskon 15%.\nPotongan harga = ___", a: "Rp30.000" },
+    { q: "Pedagang membeli pensil Rp2.000 dan menjual Rp3.000.\nKeuntungan = ___", a: "Rp1.000" },
+    { q: "Harga beli roti Rp5.000, harga jual Rp7.000.\nUntung = ___", a: "Rp2.000" },
+    { q: "Beli mainan Rp15.000, jual Rp20.000.\nKeuntungan = ___", a: "Rp5.000" },
+    { q: "Beli buku Rp25.000, jual Rp30.000.\nUntung = ___", a: "Rp5.000" },
+    { q: "Beli tas Rp50.000, jual Rp65.000.\nKeuntungan = ___", a: "Rp15.000" },
+    { q: "Barang dibeli Rp10.000 dan dijual Rp12.000.\nPersentase untung = ___ %", a: "20" },
+    { q: "Beli Rp20.000, jual Rp25.000.\nPersentase laba = ___ %", a: "25" },
+    { q: "Beli Rp50.000, jual Rp45.000.\nPersentase rugi = ___ %", a: "10" },
+    { q: "Beli Rp40.000, jual Rp44.000.\nPersentase untung = ___ %", a: "10" },
+    { q: "Beli Rp100.000, jual Rp90.000.\nPersentase rugi = ___ %", a: "10" },
+    { q: "Harga beli Rp20.000, untung Rp5.000.\nHarga jual = ___", a: "Rp25.000" },
+    { q: "Harga beli Rp50.000, untung Rp10.000.\nHarga jual = ___", a: "Rp60.000" },
+    { q: "Harga beli Rp15.000, rugi Rp2.000.\nHarga jual = ___", a: "Rp13.000" },
+    { q: "Harga beli Rp80.000, untung Rp20.000.\nHarga jual = ___", a: "Rp100.000" },
+    { q: "Harga beli Rp30.000, rugi Rp5.000.\nHarga jual = ___", a: "Rp25.000" },
+    { q: "Toko memiliki 100 botol minuman. Terjual 30 botol.\nSisa stok = ___", a: "70" },
+    { q: "Stok awal 50 buku. Datang lagi 20 buku.\nJumlah stok = ___", a: "70" },
+    { q: "Stok 80 pensil. Terjual 25.\nSisa = ___", a: "55" },
+    { q: "Stok 120 snack. Rusak 10 snack.\nSisa = ___", a: "110" },
+    { q: "Stok awal 60 roti. Datang lagi 15 roti.\nJumlah stok = ___", a: "75" },
+    { q: "Promo beli 2 gratis 1. Jika membeli 6 barang, gratis = ___ barang", a: "3" },
+    { q: "Promo diskon 50% untuk barang Rp40.000.\nHarga bayar = ___", a: "Rp20.000" },
+    { q: "Promo beli 3 bayar 2. Jika ambil 3 minuman, yang dibayar = ___ minuman", a: "2" },
+    { q: "Harga makanan Rp50.000 dikenakan pajak 10%.\nPajak = ___", a: "Rp5.000" },
+    { q: "Harga barang Rp100.000 dikenakan pajak 10%.\nTotal bayar = ___", a: "Rp110.000" }
+];
+
+const quizLevel2 = [
+    { q: "Harga baju Rp150.000 diskon 20%.\nHarga akhir = ___", a: "Rp120.000" },
+    { q: "Beli sepatu Rp200.000. Ingin untung Rp50.000.\nHarga jual = ___", a: "Rp250.000" },
+    { q: "Barang dibeli Rp80.000 dan dijual Rp100.000.\nPersentase untung = ___ %", a: "25" },
+    { q: "Harga awal Rp300.000 diskon 10%. Kemudian dikenakan pajak 10%.\nTotal bayar = ___", a: "Rp297.000" },
+    { q: "Stok awal 200 minuman. Terjual 75. Datang lagi 20.\nSisa stok = ___", a: "145" },
+    { q: "Harga beli Rp60.000. Untung 20%.\nHarga jual = ___", a: "Rp72.000" },
+    { q: "Harga barang Rp90.000 diskon 30%.\nPotongan harga = ___", a: "Rp27.000" },
+    { q: "Beli buku Rp40.000 dan dijual Rp36.000.\nPersentase rugi = ___ %", a: "10" },
+    { q: "Promo beli 4 gratis 1. Jika pelanggan membeli 12 barang, bonus = ___", a: "3" },
+    { q: "Harga makanan Rp80.000 dikenakan pajak 5%.\nTotal bayar = ___", a: "Rp84.000" },
+    { q: "Supplier A menjual 10 buku Rp50.000. Supplier B menjual 10 buku Rp45.000.\nSupplier lebih murah = ___", a: "Supplier B" },
+    { q: "Stok awal 300 snack. Rusak 25 snack. Terjual 100 snack.\nSisa stok = ___", a: "175" },
+    { q: "Harga beli Rp100.000. Rugi Rp15.000.\nHarga jual = ___", a: "Rp85.000" },
+    { q: "Harga barang Rp250.000 diskon 40%.\nHarga akhir = ___", a: "Rp150.000" },
+    { q: "Harga beli Rp120.000 dijual Rp144.000.\nPersentase laba = ___ %", a: "20" },
+    { q: "Toko memiliki 50 pensil. Datang lagi 40 pensil. Terjual 30 pensil.\nSisa stok = ___", a: "60" },
+    { q: "Harga Rp400.000 diskon 25%. Kemudian pajak 10%.\nTotal bayar = ___", a: "Rp330.000" },
+    { q: "Supplier A: 1 kg gula Rp15.000. Supplier B: 1 kg gula Rp14.000.\nSupplier termurah = ___", a: "Supplier B" },
+    { q: "Beli tas Rp70.000. Dijual Rp84.000.\nUntung = ___", a: "Rp14.000" },
+    { q: "Promo beli 5 gratis 2. Jika membeli 10 barang, bonus = ___", a: "4" }
+];
+
+const quizLevel3 = [
+    { text: "Harga laptop Rp5.000.000 diskon 20%, lalu pajak 11%. Total bayar = _____", answer: "Rp4.440.000" },
+    { text: "Pedagang membeli 50 roti seharga Rp2.000 per roti. Terjual 40 roti dengan harga Rp3.000 per roti. Total keuntungan = _____", answer: "Rp20.000" },
+    { text: "Harga beli sebuah tas Rp120.000. Agar untung 25%, harga jual harus = _____", answer: "Rp150.000" },
+    { text: "Stok awal 500 minuman. Terjual 175. Rusak 25. Datang lagi 100. Sisa stok = _____", answer: "400" },
+    { text: "Supplier A menjual 20 buku Rp180.000. Supplier B menjual 25 buku Rp200.000. Supplier termurah per buku = _____", answer: "Supplier A" },
+    { text: "Harga sepatu Rp400.000 diskon 25% lalu diskon lagi 10%. Harga akhir = _____", answer: "Rp270.000" },
+    { text: "Beli barang Rp250.000. Dijual Rp225.000. Persentase rugi = _____ %", answer: "10" },
+    { text: "Harga makanan Rp150.000. Pajak 10%. Biaya layanan Rp5.000. Total bayar = _____", answer: "Rp170.000" },
+    { text: "Promo beli 3 gratis 1. Jika pelanggan membawa 16 barang, yang dibayar = _____ barang", answer: "12" },
+    { text: "Harga beli Rp500.000. Ingin untung 15%. Harga jual = _____", answer: "Rp575.000" },
+    { text: "Toko memiliki stok 1000 snack. Hari pertama terjual 250. Hari kedua terjual 175. Datang lagi 200. Sisa stok = _____", answer: "775" },
+    { text: "Harga TV Rp3.000.000 diskon 15%, lalu pajak 10%. Total bayar = _____", answer: "Rp2.805.000" },
+    { text: "Supplier A: 5 kg beras Rp75.000. Supplier B: 4 kg beras Rp56.000. Supplier termurah per kg = _____", answer: "Supplier B" },
+    { text: "Beli buku Rp80.000. Dijual Rp96.000. Persentase laba = _____ %", answer: "20" },
+    { text: "Harga jaket Rp250.000. Diskon 20%. Pajak 10%. Total bayar = _____", answer: "Rp220.000" },
+    { text: "Toko membeli 100 botol minuman Rp4.000 per botol. Dijual Rp5.500 per botol. Jika semua habis terjual, keuntungan = _____", answer: "Rp150.000" },
+    { text: "Promo beli 2 gratis 1. Jika pelanggan membayar 8 barang, jumlah barang diterima = _____", answer: "12" },
+    { text: "Harga beli Rp150.000. Rugi 20%. Harga jual = _____", answer: "Rp120.000" },
+    { text: "Harga barang Rp600.000 diskon 35%. Harga setelah diskon = _____", answer: "Rp390.000" },
+    { text: "Supplier A menjual 12 pensil Rp36.000. Supplier B menjual 15 pensil Rp42.000. Supplier termurah per pensil = _____", answer: "Supplier B" }
+];
+
+let activeQuizTargetR = 0, activeQuizTargetC = 0;
+
+function validateIsian(inputVal, correctVal) {
+    // Menghapus karakter non-alfanumerik, menghapus 'rp', dan ubah ke huruf kecil
+    let cleanIn = inputVal.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/^rp/, '');
+    let cleanEx = correctVal.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/^rp/, '');
+    validateQuiz(cleanIn === cleanEx);
+}
+
+function triggerQuiz(r, c) {
+    gameState = 'quiz'; keys.right=false; keys.left=false; keys.jump=false;
+    activeQuizTargetR = r; activeQuizTargetC = c;
+    const area = document.getElementById('quiz-interactive-area');
+    area.innerHTML = "";
+    document.getElementById('btn-submit-quiz').classList.add('hidden');
+
+    if (currentAvailableQuestions.length === 0) {
+        if (currentLevel === 1) currentAvailableQuestions = [...quizLevel1].sort(() => Math.random() - 0.5);
+        else if (currentLevel === 2) currentAvailableQuestions = [...quizLevel2].sort(() => Math.random() - 0.5);
+        else if (currentLevel === 3) currentAvailableQuestions = [...quizLevel3].sort(() => Math.random() - 0.5);
+    }
+    const qData = currentAvailableQuestions.pop();
+
+    if (currentLevel === 1 || currentLevel === 2) {
+        document.getElementById('quiz-title').innerText = "Isian Singkat!";
+        document.getElementById('quiz-question').innerText = qData.q;
+        
+        let inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.id = 'quiz-input-field';
+        inputField.className = 'input-field';
+        inputField.placeholder = "Ketik jawabanmu...";
+        inputField.style.marginTop = '15px';
+        inputField.style.textAlign = 'center';
+        
+        // Peringatan agar jawaban jelas
+        let hint = document.createElement('p');
+        hint.innerText = "(Tulis jawaban berupa angka/nominal sesuai teks)";
+        hint.style.fontSize = '12px'; hint.style.color = '#777'; hint.style.marginTop = '5px';
+        
+        area.appendChild(inputField);
+        area.appendChild(hint);
+        
+        let btn = document.getElementById('btn-submit-quiz');
+        btn.classList.remove('hidden');
+        btn.innerText = "Cek Jawaban";
+        btn.onclick = () => validateIsian(inputField.value, qData.a);
+    } 
+    else if (currentLevel === 3) {
+        document.getElementById('quiz-title').innerText = "Drag and Drop (Ketuk Pilihan)!";
+        document.getElementById('quiz-question').innerHTML = qData.text.replace("_____", "<span class='answer-slot' id='q3-slot'>...</span>");
+        
+        let wordBank = document.createElement('div'); wordBank.className = 'word-bank';
+        
+        // Mengambil pilihan ganda acak dari seluruh jawaban (ditambah jawaban benar)
+        let allAnswers = quizLevel3.map(q => q.answer);
+        let shuffledBank = [qData.answer];
+        while(shuffledBank.length < 6) {
+            let randAns = allAnswers[Math.floor(Math.random() * allAnswers.length)];
+            if(!shuffledBank.includes(randAns)) shuffledBank.push(randAns);
+        }
+        shuffledBank.sort(() => Math.random() - 0.5);
+        
+        let selectedAns = "";
+
+        shuffledBank.forEach(w => {
+            let chip = document.createElement('div'); chip.className = 'word-chip'; chip.innerText = w;
+            chip.onclick = () => {
+                selectedAns = w;
+                document.getElementById('q3-slot').innerText = w;
+                document.getElementById('q3-slot').classList.add('filled');
+                let btn = document.getElementById('btn-submit-quiz');
+                btn.classList.remove('hidden');
+                btn.innerText = "Cek Jawaban";
+                btn.onclick = () => validateQuiz(selectedAns === qData.answer);
+            };
+            wordBank.appendChild(chip);
+        });
+        area.appendChild(wordBank);
+    }
+
+    // --- LOGIKA AI TUTOR ---
+    let btnAi = document.getElementById('btn-ai-tutor');
+    let aiMsg = document.getElementById('ai-tutor-message');
+    aiMsg.classList.add('hidden');
+    
+    if (aiTutorUses > 0) {
+        btnAi.classList.remove('hidden');
+        btnAi.disabled = false;
+        btnAi.style.opacity = 1;
+        document.getElementById('ai-count').innerText = aiTutorUses;
+    } else {
+        btnAi.classList.remove('hidden');
+        btnAi.disabled = true;
+        btnAi.style.opacity = 0.5;
+        document.getElementById('ai-count').innerText = 0;
+    }
+
+    btnAi.onclick = () => {
+        if (aiTutorUses > 0) {
+            aiTutorUses--;
+            document.getElementById('ai-count').innerText = aiTutorUses;
+            btnAi.disabled = true;
+            btnAi.style.opacity = 0.5;
+            
+            let questionText = qData.q || qData.text || "";
+            aiMsg.innerHTML = generateAIHint(questionText);
+            aiMsg.classList.remove('hidden');
+            playSound('coin'); // Suara kecil saat AI muncul
+        }
+    };
+
+    document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function generateAIHint(question) {
+    let qLow = question.toLowerCase();
+    let hint = "💡 <b>AI Tutor:</b><br>Halo! Jangan menyerah dulu ya. Coba perhatikan angka-angkanya dengan teliti.";
+    
+    if (qLow.includes("diskon") || qLow.includes("potongan")) {
+        hint = "💡 <b>AI Tutor:</b><br>Untuk mencari <b>diskon</b>, kalikan persentase dengan harga awal. Jika mencari harga akhir, kurangi harga awal dengan hasil diskon tersebut. Kamu pasti bisa!";
+    } else if (qLow.includes("untung") || qLow.includes("laba") || qLow.includes("keuntungan")) {
+        hint = "💡 <b>AI Tutor:</b><br><b>Keuntungan</b> didapat dari (Harga Jual - Harga Beli).<br>Ingat rumus persentase untung: <i>(Untung / Harga Beli) x 100%</i>. Ayo, sedikit lagi!";
+    } else if (qLow.includes("rugi")) {
+        hint = "💡 <b>AI Tutor:</b><br><b>Kerugian</b> terjadi jika Harga Beli > Harga Jual. Hitung selisihnya, lalu bagi dengan Harga Beli untuk mencari persentasenya. Semangat!";
+    } else if (qLow.includes("stok") || qLow.includes("sisa") || qLow.includes("botol")) {
+        hint = "💡 <b>AI Tutor:</b><br>Bayangkan barang fisiknya. Barang terjual/rusak berarti dikurang (-). Barang datang berarti ditambah (+). Hitung secara berurutan ya!";
+    } else if (qLow.includes("promo") || qLow.includes("gratis")) {
+        hint = "💡 <b>AI Tutor:</b><br>Coba kelompokkan! Misalnya 'Beli 2 gratis 1', berarti dalam 1 kelompok ada 3 barang, tapi kamu cuma bayar 2. Hitung total kelompok yang didapat!";
+    } else if (qLow.includes("pajak")) {
+        hint = "💡 <b>AI Tutor:</b><br>Ingat, <b>Pajak</b> akan MENAMBAH total belanjamu. Hitung nilai pajaknya dulu (persentase x harga), lalu tambahkan ke harga awal.";
+    } else if (qLow.includes("supplier") || qLow.includes("termurah")) {
+        hint = "💡 <b>AI Tutor:</b><br>Bandingkan dengan adil! Cari tahu dulu harga <b>PER SATUAN</b> dari tiap supplier (Total Harga dibagi Jumlah Barang). Pilih yang harganya paling kecil.";
+    }
+    
+    hint += "<br><br><i>Langkah pengerjaan: Pahami soal ➔ Tentukan operasi (+, -, x, /) ➔ Hitung perlahan.</i>";
+    return hint;
+}
+
+function validateQuiz(isCorrect) {
+    document.getElementById('quiz-modal').classList.add('hidden');
+    if (isCorrect) {
+        playSound('powerup'); score += 100; updateHUD(); spawnFloatingText("BENAR! +100", player.x, player.y-20, '#4caf50');
+        mapTiles[activeQuizTargetR][activeQuizTargetC].type = 6; 
+        mapTiles[activeQuizTargetR][activeQuizTargetC].bumpY = -10;
+        answeredQuestions++; 
+    } else {
+        playSound('bump'); spawnFloatingText("SALAH!", player.x, player.y-20, '#e52521');
+        mapTiles[activeQuizTargetR][activeQuizTargetC].bumpY = -10; 
+    }
+    gameState = 'playing';
+}
+
+/** LIBRARY SYSTEM */
+const libPages = [
+    "<b>1. Aritmetika Sosial dalam Kehidupan</b><br>Aritmetika sosial adalah ilmu matematika yang digunakan dalam kehidupan sehari-hari, terutama dalam kegiatan perdagangan atau jual beli.<br><br><b>2. Menghitung Diskon (Potongan Harga)</b><br>Diskon adalah potongan harga yang diberikan oleh penjual.<br>• <i>Nominal Diskon</i> = Persentase Diskon × Harga Awal<br>• <i>Harga Akhir</i> = Harga Awal - Nominal Diskon<br><br><b>3. Menentukan Harga Jual</b><br>Harga jual adalah harga barang yang ditawarkan kepada pembeli.<br>• Jika ingin untung: <i>Harga Jual = Harga Beli + Keuntungan</i><br>• Jika terpaksa rugi: <i>Harga Jual = Harga Beli - Kerugian</i>",
+    
+    "<b>4. Mengatur Keuntungan dan Kerugian</b><br>• <b>Untung</b>: Terjadi jika Harga Jual lebih besar dari Harga Beli.<br><i>Rumus: Untung = Harga Jual - Harga Beli</i><br>• <b>Rugi</b>: Terjadi jika Harga Beli lebih besar dari Harga Jual.<br><i>Rumus: Rugi = Harga Beli - Harga Jual</i><br><br><b>5. Menghitung Persentase Laba dan Rugi</b><br>Persentase selalu dihitung dari Harga Beli (Modal utama).<br>• <i>% Untung</i> = (Untung / Harga Beli) × 100%<br>• <i>% Rugi</i> = (Rugi / Harga Beli) × 100%",
+    
+    "<b>6. Mengatur Stok Barang</b><br>Dalam sebuah bisnis, sangat penting untuk mencatat keluar masuknya barang.<br><i>Rumus Sisa Stok:</i><br>Stok Akhir = Stok Awal + Barang Masuk (Datang) - Barang Terjual - Barang Rusak.<br><br><b>7. Membuat Promo Menarik</b><br>Promo digunakan untuk menarik perhatian pembeli, contohnya promo 'Beli 2 Gratis 1'.<br>Artinya, jika pelanggan membayar 2 barang, ia berhak membawa pulang 3 barang. Perhitungan ini penting agar toko tetap untung meski memberi bonus.",
+    
+    "<b>8. Menghitung Pajak Sederhana</b><br>Pajak (seperti PPN) adalah biaya tambahan yang dibebankan kepada pembeli dan harus disetor ke negara. Berbeda dengan diskon yang mengurangi harga, pajak justru <b>menambah</b> harga.<br>• <i>Nominal Pajak</i> = Persentase Pajak × Harga Barang<br>• <i>Total Bayar</i> = Harga Barang + Nominal Pajak<br><br><b>9. Membandingkan Supplier (Pemasok)</b><br>Untuk mendapat untung besar, carilah modal termurah. Caranya adalah membandingkan <b>Harga Per Satuan</b> dari tiap supplier.<br><i>Rumus: Harga Per Satuan = Total Harga / Jumlah Barang</i>. Pilih supplier dengan hasil terkecil!"
+];
+let currentLibPage = 0;
+
+function showLibrary() {
+    gameState = 'library'; keys.right=false; keys.left=false; keys.jump=false; keys.down=false;
+    currentLibPage = 0; updateLibraryUI();
+    document.getElementById('library-modal').classList.remove('hidden');
+}
+
+function updateLibraryUI() {
+    document.getElementById('lib-content-area').innerHTML = libPages[currentLibPage];
+    document.getElementById('lib-page-indicator').innerText = `${currentLibPage + 1} / ${libPages.length}`;
+    document.getElementById('lib-prev').style.display = currentLibPage > 0 ? 'inline-block' : 'none';
+    document.getElementById('lib-next').style.display = currentLibPage < libPages.length - 1 ? 'inline-block' : 'none';
+}
+
+document.getElementById('lib-prev').onclick = () => { if(currentLibPage>0) { currentLibPage--; updateLibraryUI(); }};
+document.getElementById('lib-next').onclick = () => { if(currentLibPage<libPages.length-1) { currentLibPage++; updateLibraryUI(); }};
+document.getElementById('lib-close').onclick = () => { 
+    document.getElementById('library-modal').classList.add('hidden'); 
+    player.pipeState = 'exiting'; 
+    player.pipeTimer = 30; 
+    teleportToTile(14); 
+    score += 50; updateHUD();
+    gameState = 'pipe_transition'; 
+};
+
+/** MENGIRIM SKOR KE DATABASE SERVER GAS */
+function submitScoreToGAS() {
+    if(score > 0 && currentPlayer.name !== '') {
+        const data = new URLSearchParams();
+        data.append('name', currentPlayer.name);
+        data.append('school', currentPlayer.school);
+        data.append('score', score);
+        
+        fetch(GAS_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', // Menghindari error blokir saat kirim (meski tidak bisa baca respon balikan server)
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: data 
+        })
+        .then(() => console.log('Skor sukses terkirim ke GAS!'))
+        .catch(e => console.error("Error mengirim skor:", e));
+    }
+}
+
+/** LEADERBOARD GAS */
+function showLeaderboard() {
+    document.getElementById('main-menu').classList.add('hidden');
+    document.getElementById('leaderboard-modal').classList.remove('hidden');
+    
+    const lbLoading = document.getElementById('lb-loading');
+    const podiumContainer = document.getElementById('podium-container');
+    const lbList = document.getElementById('lb-list');
+    
+    lbLoading.style.display = 'block'; lbLoading.innerText = 'Memuat data dari server...';
+    podiumContainer.classList.add('hidden'); lbList.classList.add('hidden'); lbList.innerHTML = '';
+    
+    fetch(GAS_URL)
+        .then(res => {
+            if(!res.ok) throw new Error('Jaringan bermasalah atau URL salah');
+            return res.json();
+        })
+        .then(data => {
+            lbLoading.style.display = 'none';
+            if (data && data.length > 0) {
+                // Urutkan skor dari yang paling tinggi
+                data.sort((a,b) => b.score - a.score);
+                
+                podiumContainer.classList.remove('hidden');
+                if(data[0]) { document.getElementById('pod-1-name').innerText = data[0].name || '-'; document.getElementById('pod-1-school').innerText = data[0].school || '-'; document.getElementById('pod-1-score').innerText = data[0].score || '-'; }
+                if(data[1]) { document.getElementById('pod-2-name').innerText = data[1].name || '-'; document.getElementById('pod-2-school').innerText = data[1].school || '-'; document.getElementById('pod-2-score').innerText = data[1].score || '-'; }
+                if(data[2]) { document.getElementById('pod-3-name').innerText = data[2].name || '-'; document.getElementById('pod-3-school').innerText = data[2].school || '-'; document.getElementById('pod-3-score').innerText = data[2].score || '-'; }
+                
+                let html = "";
+                for(let i=3; i<data.length; i++) {
+                    let isMe = data[i].name === currentPlayer.name ? "style='background:rgba(76,175,80,0.2);'" : "";
+                    html += `<div class='lb-item' ${isMe}><span class='lb-rank'>#${i+1}</span><div class='lb-name'>${data[i].name}<span class='lb-school'>${data[i].school}</span></div><span class='lb-pts'>${data[i].score}</span></div>`;
+                }
+                lbList.innerHTML = html; lbList.classList.remove('hidden');
+            } else { 
+                lbLoading.style.display = 'block'; lbLoading.innerText = 'Belum ada data skor.'; 
+            }
+        })
+        .catch(err => {
+            lbLoading.style.display = 'block'; 
+            lbLoading.innerText = 'Gagal memuat data. Cek kode GAS Anda.'; 
+            console.error(err); 
+        });
+}
+document.getElementById('leaderboard-btn').onclick = showLeaderboard;
+document.getElementById('btn-close-lb').onclick = () => { document.getElementById('leaderboard-modal').classList.add('hidden'); document.getElementById('main-menu').classList.remove('hidden'); };
+
+/** UI LOGIC & EVENTS */
+function updateHUD() {
+    document.getElementById('ui-lives').innerText = lives;
+    document.getElementById('ui-score').innerText = score;
+    document.getElementById('ui-level').innerText = currentLevel;
+}
+
+document.getElementById('login-submit-btn').onclick = () => {
+    let n = document.getElementById('player-name').value.trim();
+    let s = document.getElementById('player-school').value.trim();
+    if(n && s) {
+        currentPlayer.name = n; currentPlayer.school = s;
+        document.getElementById('login-menu').classList.add('hidden');
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.getElementById('welcome-name').innerText = n;
+        initAudio(); 
+    } else { document.getElementById('login-error').style.display = 'block'; }
+};
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e => console.log(e)); } 
+    else { if(document.exitFullscreen) document.exitFullscreen(); }
+}
+document.getElementById('fs-btn-login').addEventListener('click', toggleFullscreen);
+document.getElementById('fs-btn-main').addEventListener('click', toggleFullscreen);
+document.getElementById('fullscreen-hud-btn').addEventListener('click', toggleFullscreen);
+
+document.getElementById('zoom-in-btn').addEventListener('click', () => { zoomLevel = Math.min(2.0, zoomLevel + 0.1); });
+document.getElementById('zoom-out-btn').addEventListener('click', () => { zoomLevel = Math.max(0.4, zoomLevel - 0.1); });
+
+function showMainMenu() {
+    gameState = 'menu'; stopBGM();
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('touch-controls').classList.add('hidden');
+    document.getElementById('main-menu').classList.remove('hidden');
+}
+
+document.getElementById('start-btn').onclick = () => {
+    document.getElementById('main-menu').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    
+    // Selalu tampilkan kontrol di layar agar bisa diklik pakai mouse atau disentuh
+    document.getElementById('touch-controls').classList.remove('hidden');
+    
+    score = 0; lives = 3; loadLevel(1);
+};
+
+window.addEventListener('keydown', e => {
+    if(gameState !== 'playing') return;
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if(e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') keys.jump = true;
+    if(e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
+});
+window.addEventListener('keyup', e => {
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if(e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') keys.jump = false;
+    if(e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
+});
+
+const bindControl = (id, key) => {
+    const el = document.getElementById(id);
+    const startAction = (e) => { e.preventDefault(); if(gameState==='playing') keys[key]=true; el.classList.add('active'); };
+    const endAction = (e) => { e.preventDefault(); keys[key]=false; el.classList.remove('active'); };
+    
+    // Touch
+    el.addEventListener('touchstart', startAction, {passive: false});
+    el.addEventListener('touchend', endAction, {passive: false});
+    el.addEventListener('touchcancel', endAction, {passive: false});
+    
+    // Mouse
+    el.addEventListener('mousedown', startAction);
+    el.addEventListener('mouseup', endAction);
+    el.addEventListener('mouseleave', endAction);
+};
+bindControl('t-left', 'left'); bindControl('t-right', 'right'); bindControl('t-jump', 'jump'); bindControl('t-down', 'down');
+
+function loop() {
+    if (gameState === 'playing') { updateGame(); drawGame(); } 
+    else if (gameState === 'flag_slide') { updateFlagSlide(); drawGame(); } 
+    else if (gameState === 'level_complete') { drawGame(); } 
+    else if (gameState === 'pipe_transition') { updatePipe(); drawGame(); }
+    requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+</body>
+</html>
