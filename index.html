@@ -17,9 +17,10 @@
         .rotate-icon { font-size: 80px; margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out; }
         @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
         
-        @media screen and (orientation: portrait) { 
-            #landscape-warning { display: flex !important; } 
-            #game-wrapper { display: none !important; } 
+        /* Hanya aktif setelah splash screen selesai dan di perangkat mobile (portrait) */
+        @media screen and (orientation: portrait) and (max-width: 900px) { 
+            body.check-orientation #landscape-warning { display: flex !important; } 
+            body.check-orientation #game-wrapper { display: none !important; } 
         }
 
         /* --- SPLASH SCREEN --- */
@@ -516,8 +517,8 @@ const maps = [
         "                        B?M                                      ",
         "      M    Q                                                   S ",
         "                  B?Q?BBZBB                BBBBB                 ",
-        "         E               BB                                QN    ",
-        "      B?B   L      X     BB        E      P                      ",
+        "         E               BBB                               QN    ",
+        "      B?B   L            BB        E      P                      ",
         " R R      R l      X     R         R      p   E               R  ",
         "GGGGGGGGGGGGGG  GGGGGGGGGGGGGGGGG GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG ",
         "                                                                 ",
@@ -719,7 +720,8 @@ function checkCollisions(isX) {
                 let tile = mapTiles[r][c];
                 
                 // Flag collision (Win / Progress)
-                if (specialPoints.flag && c === Math.floor(specialPoints.flag.x/TILE_SIZE) && r >= Math.floor(specialPoints.flag.y/TILE_SIZE) && r <= Math.floor(specialPoints.flag.y/TILE_SIZE)+9) {
+                let poleTiles = specialPoints.flag ? specialPoints.flag.poleHeight / TILE_SIZE : 0;
+                if (specialPoints.flag && c === Math.floor(specialPoints.flag.x/TILE_SIZE) && r >= Math.floor(specialPoints.flag.y/TILE_SIZE) && r <= Math.floor(specialPoints.flag.y/TILE_SIZE) + poleTiles) {
                     if (answeredQuestions < totalQuestions) {
                         if (warningTimer <= 0) {
                             spawnFloatingText("Jawab Semua Kuis Dulu!", player.x, player.y - 30, '#e52521');
@@ -1082,7 +1084,7 @@ function drawGame() {
     }
 
     if(specialPoints.flag) {
-        ctx.fillStyle = '#fff'; ctx.fillRect(specialPoints.flag.x + 18, specialPoints.flag.y, 4, 10*TILE_SIZE);
+        ctx.fillStyle = '#fff'; ctx.fillRect(specialPoints.flag.x + 18, specialPoints.flag.y, 4, specialPoints.flag.poleHeight);
         ctx.fillStyle = '#fbd000'; ctx.beginPath(); ctx.arc(specialPoints.flag.x + 20, specialPoints.flag.y - 10, 12, 0, Math.PI*2); ctx.fill();
         if(assets.flag.complete && assets.flag.naturalHeight !== 0) {
             let flagY = specialPoints.flag.flagY || (specialPoints.flag.y + 20);
@@ -1188,15 +1190,22 @@ function startFlagSlide() {
 }
 
 function updateFlagSlide() {
-    if (player.y < specialPoints.flag.y + 8.5 * TILE_SIZE) {
+    let slideBottom = specialPoints.flag.y + specialPoints.flag.poleHeight - player.height;
+    let flagBottom = specialPoints.flag.y + specialPoints.flag.poleHeight - 60; // 60 adalah tinggi gambar bendera
+
+    if (player.y < slideBottom) {
         player.y += 3;
         player.runFrame = 0;
     }
-    if (specialPoints.flag.flagY < specialPoints.flag.y + 8.5 * TILE_SIZE) {
+    if (specialPoints.flag.flagY < flagBottom) {
         specialPoints.flag.flagY += 3;
     }
     
-    if (player.y >= specialPoints.flag.y + 8.5 * TILE_SIZE && specialPoints.flag.flagY >= specialPoints.flag.y + 8.5 * TILE_SIZE) {
+    // Pastikan posisi tidak tembus ke bawah tanah saat berhenti
+    if (player.y > slideBottom) player.y = slideBottom;
+    if (specialPoints.flag.flagY > flagBottom) specialPoints.flag.flagY = flagBottom;
+
+    if (player.y >= slideBottom && specialPoints.flag.flagY >= flagBottom) {
         levelComplete();
     }
     
@@ -1299,6 +1308,17 @@ function loadLevel(lvlIndex) {
         mapTiles.push(row);
     }
     
+    // Kalkulasi tinggi tiang bendera secara otomatis agar menyentuh lantai dengan pas
+    if (specialPoints.flag) {
+        let fc = Math.floor(specialPoints.flag.x / TILE_SIZE);
+        let fr = Math.floor(specialPoints.flag.y / TILE_SIZE);
+        let groundRow = fr;
+        while (groundRow < mapHeight && mapTiles[groundRow] && !isSolid(mapTiles[groundRow][fc].type)) {
+            groundRow++;
+        }
+        specialPoints.flag.poleHeight = (groundRow - fr) * TILE_SIZE;
+    }
+
     generateNature();
 
     // Persiapkan soal acak tanpa pengulangan untuk level ini
@@ -1791,6 +1811,8 @@ let splashTimer = setInterval(() => {
                 splash.classList.add('hidden');
                 document.getElementById('login-menu').classList.remove('hidden');
                 gameState = 'login';
+                // Aktifkan pengecekan orientasi layar HP setelah splash screen selesai
+                document.body.classList.add('check-orientation');
             }, 500); // Tunggu sampai transisi fade-out selesai
         }, 600); // Jeda sejenak setelah 100% penuh
     }
